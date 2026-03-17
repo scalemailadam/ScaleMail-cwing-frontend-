@@ -59,7 +59,7 @@ function ScalesGrid({ rows, cols, scaleSize, speed, amplitude }) {
     shape.absarc(0, 0, w / 2, 0, Math.PI, true);
     shape.closePath();
     // extrude with subdivisions for displacement
-    return new THREE.ExtrudeBufferGeometry(shape, {
+    return new THREE.ExtrudeGeometry(shape, {
       depth: 0.05, // tiny depth so normals/displacement work
       steps: 20,
       bevelEnabled: false,
