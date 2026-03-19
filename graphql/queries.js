@@ -26,6 +26,7 @@ const GET_HEADER = gql`
         label
         items {
           text
+          url
           modalSlug
         }
       }

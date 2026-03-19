@@ -7,6 +7,7 @@ export default function Home() {
   const [openFolder, setOpenFolder] = useState(null); // the active window
   const [minimized, setMinimized] = useState([]); // array of folders
   const [isFull, setIsFull] = useState(false); // full-screen flag
+  const [navModalSlug, setNavModalSlug] = useState(null);
 
   /* ---------- helpers ---------- */
   const open = (folder) => {
@@ -36,7 +37,7 @@ export default function Home() {
 
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden">
-      <Header />
+      <Header onMenuItemClick={(slug) => setNavModalSlug(slug)} />
 
       <Desktop
         openFolder={openFolder}
@@ -45,6 +46,8 @@ export default function Home() {
         onMinimizeFolder={minimize}
         onToggleFullscreen={toggleFS}
         isFullscreen={isFull}
+        navModalSlug={navModalSlug}
+        onNavModalHandled={() => setNavModalSlug(null)}
       />
 
       <Dock

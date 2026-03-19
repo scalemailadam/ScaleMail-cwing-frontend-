@@ -33,6 +33,8 @@ export default function Desktop({
   onMinimizeFolder,
   onToggleFullscreen,
   isFullscreen,
+  navModalSlug,
+  onNavModalHandled,
 }) {
   const { data, loading, error } = useQuery(GET_FOLDER);
   const iconRefs = useRef([]);
@@ -73,6 +75,13 @@ export default function Desktop({
       setForwardStack([]);
     }
   }, [openFolder]);
+
+  useEffect(() => {
+    if (navModalSlug) {
+      setCustomModal({ modalSlug: navModalSlug });
+      if (onNavModalHandled) onNavModalHandled();
+    }
+  }, [navModalSlug]);
 
   if (loading) return null;
   if (error) return <p>Error loading folders: {error.message}</p>;

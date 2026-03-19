@@ -3,7 +3,7 @@ import { Fragment, useRef, useState } from "react";
 
 const HOVER_DELAY = 100; // ms – tweak to taste
 
-function NavMenu({ menu }) {
+function NavMenu({ menu, onItemClick }) {
   const dropdownRef = useRef(null);
 
   const [openDropdown, setOpenDropdown] = useState(false);
@@ -72,20 +72,30 @@ function NavMenu({ menu }) {
               className="absolute left-0 mt-1 min-w-44 origin-top bg-[#363539] opacity-90 text-white backdrop-blur rounded shadow-lg z-10"
             >
               {menu.items?.map((item) => (
-                <Menu.Item
-                  key={item.text}
-                  onClick={() => setOpenDropdown(false)}
-                >
-                  {({ active }) => (
-                    <a
-                      href={item.url}
-                      className={`block px-4 py-2 whitespace-nowrap ${
-                        active ? "text-white hover:bg-[#464746]" : ""
-                      } text-white hover:bg-[#464746] rounded`}
-                    >
-                      {item.text}
-                    </a>
-                  )}
+                <Menu.Item key={item.text}>
+                  {({ active }) =>
+                    item.url ? (
+                      <a
+                        href={item.url}
+                        target={item.url.startsWith("http") ? "_blank" : undefined}
+                        rel={item.url.startsWith("http") ? "noopener noreferrer" : undefined}
+                        onClick={() => setOpenDropdown(false)}
+                        className={`block px-4 py-2 whitespace-nowrap cursor-pointer text-white hover:bg-[#464746] rounded`}
+                      >
+                        {item.text}
+                      </a>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setOpenDropdown(false);
+                          if (item.modalSlug && onItemClick) onItemClick(item.modalSlug);
+                        }}
+                        className={`block w-full text-left px-4 py-2 whitespace-nowrap cursor-pointer text-white hover:bg-[#464746] rounded`}
+                      >
+                        {item.text}
+                      </button>
+                    )
+                  }
                 </Menu.Item>
               ))}
             </Menu.Items>

@@ -18,7 +18,7 @@ const getLogoUrl = (logoArr = []) => {
 };
 
 // -------- component --------
-export default function Header() {
+export default function Header({ onMenuItemClick }) {
   const [now, setNow] = useState(new Date());
   const { data, loading, error } = useQuery(GET_HEADER);
 
@@ -75,7 +75,7 @@ export default function Header() {
         )}
         <div className="hidden md:flex items-center space-x-2">
           {menus.map((menu) => (
-            <NavMenu key={menu.label} menu={menu} />
+            <NavMenu key={menu.label} menu={menu} onItemClick={onMenuItemClick} />
           ))}
         </div>
       </div>
