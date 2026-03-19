@@ -104,6 +104,10 @@ export default function Desktop({
   const toUrl = (u = "") => (u.startsWith("http") ? u : `${STRAPI_URL}${u}`);
 
   const openFolderOrModal = (folder) => {
+    if (folder.url) {
+      window.open(folder.url, "_blank", "noopener,noreferrer");
+      return;
+    }
     onOpenFolder(folder);
     if (folder.modalSlug === "openFolder") {
       // • you’ve clicked the Finder icon → show root

@@ -48,6 +48,7 @@ const GET_FOLDER = gql`
         uuid
         title
         modalSlug
+        url
         icon {
           url
         }
