@@ -19,7 +19,7 @@ export default function ArmorBackground() {
 // ── Grey scale texture with central ridge shading ──────────────────
 // Mimics the reference image: lighter ridge down the centre, darker
 // falloff toward the left/right edges, with a subtle vertical gradient
-// (slightly lighter at the pointed top, slightly darker at the round base).
+// (lighter at the broad top, darker toward the pointed bottom).
 function makeScaleTexture() {
   const w = 128;
   const h = 256;
@@ -65,25 +65,24 @@ function makeScaleTexture() {
   return tex;
 }
 
-// ── Teardrop / guitar-pick scale shape ─────────────────────────────
-// Pointed at top, wide and rounded at bottom.
-// Origin placed at the TOP TIP so rotation pivots there (hinge point).
+// ── Armor scale shape ──────────────────────────────────────────────
+// Broad rounded top, tapers to a point at the bottom.
+// Origin at the TOP CENTER (broad edge) — this is the hinge point.
+// The scale hangs downward from its wide top.
 function makeScaleShape(w, h) {
   const shape = new THREE.Shape();
   const hw = w / 2;
 
-  // Start at the pointed top (origin = 0,0)
+  // Start at the top-center (hinge point, broad edge)
   shape.moveTo(0, 0);
 
-  // Curve out to the right, widening toward the bottom
-  shape.bezierCurveTo(hw * 0.3, -h * 0.15, hw, -h * 0.35, hw, -h * 0.55);
+  // Right side: fan out to full width, then taper down to pointed bottom
+  shape.bezierCurveTo(hw * 0.5, 0, hw, -h * 0.05, hw, -h * 0.2);
+  shape.bezierCurveTo(hw, -h * 0.5, hw * 0.3, -h * 0.85, 0, -h);
 
-  // Round bottom arc
-  shape.bezierCurveTo(hw, -h * 0.8, hw * 0.4, -h, 0, -h);
-  shape.bezierCurveTo(-hw * 0.4, -h, -hw, -h * 0.8, -hw, -h * 0.55);
-
-  // Curve back up to the left, narrowing toward the top
-  shape.bezierCurveTo(-hw, -h * 0.35, -hw * 0.3, -h * 0.15, 0, 0);
+  // Left side: mirror back up from pointed bottom to top-center
+  shape.bezierCurveTo(-hw * 0.3, -h * 0.85, -hw, -h * 0.5, -hw, -h * 0.2);
+  shape.bezierCurveTo(-hw, -h * 0.05, -hw * 0.5, 0, 0, 0);
 
   return shape;
 }
