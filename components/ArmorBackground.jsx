@@ -1,68 +1,23 @@
 "use client";
 
-import React, { useRef, useMemo } from "react";
+import React, { useRef, useMemo, useEffect } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { useTexture } from "@react-three/drei";
 import * as THREE from "three";
 
 export default function ArmorBackground() {
   return (
     <div className="fixed inset-0 -z-10 pointer-events-none">
       <Canvas camera={{ position: [0, 0, 20], fov: 50 }} dpr={[1, 1.5]}>
-        {/* Diffused top-left light source */}
-        <ambientLight intensity={0.55} />
-        <directionalLight position={[-8, 6, 10]} intensity={0.7} />
-        {/* Subtle fill from bottom-right to avoid pure black */}
-        <directionalLight position={[6, -4, 5]} intensity={0.15} />
+        {/* Diffused top-left light — pronounced gradient */}
+        <ambientLight intensity={0.35} />
+        <directionalLight position={[-10, 8, 12]} intensity={1.0} />
+        {/* Subtle fill from bottom-right */}
+        <directionalLight position={[8, -6, 5]} intensity={0.1} />
         <ScalesInstanced scaleSize={2} />
       </Canvas>
     </div>
   );
-}
-
-// ── Grey scale texture with central ridge shading ──────────────────
-function makeScaleTexture() {
-  const w = 128;
-  const h = 256;
-  const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext("2d");
-
-  // Base vertical gradient (top lighter → bottom slightly darker)
-  const vGrad = ctx.createLinearGradient(0, 0, 0, h);
-  vGrad.addColorStop(0, "#c8c8c8");
-  vGrad.addColorStop(0.5, "#b0b0b0");
-  vGrad.addColorStop(1, "#909090");
-  ctx.fillStyle = vGrad;
-  ctx.fillRect(0, 0, w, h);
-
-  // Central ridge highlight
-  ctx.globalCompositeOperation = "lighter";
-  const rGrad = ctx.createLinearGradient(0, 0, w, 0);
-  rGrad.addColorStop(0, "rgba(0,0,0,0)");
-  rGrad.addColorStop(0.35, "rgba(0,0,0,0)");
-  rGrad.addColorStop(0.5, "rgba(60,60,60,1)");
-  rGrad.addColorStop(0.65, "rgba(0,0,0,0)");
-  rGrad.addColorStop(1, "rgba(0,0,0,0)");
-  ctx.fillStyle = rGrad;
-  ctx.fillRect(0, 0, w, h);
-
-  // Darken the edges
-  ctx.globalCompositeOperation = "multiply";
-  const eGrad = ctx.createLinearGradient(0, 0, w, 0);
-  eGrad.addColorStop(0, "rgba(120,120,120,1)");
-  eGrad.addColorStop(0.2, "rgba(200,200,200,1)");
-  eGrad.addColorStop(0.5, "rgba(255,255,255,1)");
-  eGrad.addColorStop(0.8, "rgba(200,200,200,1)");
-  eGrad.addColorStop(1, "rgba(120,120,120,1)");
-  ctx.fillStyle = eGrad;
-  ctx.fillRect(0, 0, w, h);
-
-  ctx.globalCompositeOperation = "source-over";
-
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.needsUpdate = true;
-  return tex;
 }
 
 // ── Armor scale shape ──────────────────────────────────────────────
@@ -91,37 +46,97 @@ function ScalesInstanced({ scaleSize }) {
   const rows = Math.ceil(viewport.height / (h * 0.45)) + 4;
   const count = rows * cols;
 
+  // Load the cracked texture
+  const crackedTex = useTexture("/textures/cracked-scale.png");
+  crackedTex.wrapS = crackedTex.wrapT = THREE.RepeatWrapping;
+
+  // Face geometry
   const faceGeo = useMemo(
     () => new THREE.ShapeGeometry(makeScaleShape(w, h), 12),
     [w, h]
   );
 
+  // Stroke geometry — slightly larger
   const strokeGeo = useMemo(
     () => new THREE.ShapeGeometry(makeScaleShape(w * 1.05, h * 1.03), 12),
     [w, h]
   );
 
-  const scaleTexture = useMemo(() => makeScaleTexture(), []);
-  const faceMat = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        map: scaleTexture,
-        metalness: 0.35,
-        roughness: 0.65,
-        side: THREE.DoubleSide,
-      }),
-    [scaleTexture]
-  );
+  // Per-instance UV offsets — each scale crops a different part of the texture
+  const cropScale = 0.2; // each scale shows 20% of the texture
+  const uvOffsets = useMemo(() => {
+    const offsets = new Float32Array(count * 2);
+    for (let i = 0; i < count; i++) {
+      offsets[i * 2] = Math.random() * (1 - cropScale);
+      offsets[i * 2 + 1] = Math.random() * (1 - cropScale);
+    }
+    return offsets;
+  }, [count]);
+
+  // Attach per-instance UV offset attribute to face geometry
+  useEffect(() => {
+    if (!faceRef.current) return;
+    const attr = new THREE.InstancedBufferAttribute(uvOffsets, 2);
+    faceRef.current.geometry.setAttribute("aUvOffset", attr);
+  }, [faceRef, uvOffsets]);
+
+  // Custom material with per-instance UV offset shader injection
+  const faceMat = useMemo(() => {
+    const mat = new THREE.MeshStandardMaterial({
+      map: crackedTex,
+      metalness: 0.3,
+      roughness: 0.7,
+      side: THREE.DoubleSide,
+    });
+
+    mat.onBeforeCompile = (shader) => {
+      shader.uniforms.cropScale = { value: cropScale };
+
+      // Add instance attribute declaration to vertex shader
+      shader.vertexShader = shader.vertexShader.replace(
+        "void main() {",
+        `attribute vec2 aUvOffset;
+         varying vec2 vCropUv;
+         uniform float cropScale;
+         void main() {`
+      );
+
+      // Pass cropped UV to fragment shader
+      shader.vertexShader = shader.vertexShader.replace(
+        "#include <uv_vertex>",
+        `#include <uv_vertex>
+         vCropUv = uv * cropScale + aUvOffset;`
+      );
+
+      // Declare the varying in fragment shader
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "void main() {",
+        `varying vec2 vCropUv;
+         void main() {`
+      );
+
+      // Replace texture sampling to use our cropped UVs
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <map_fragment>",
+        `#ifdef USE_MAP
+           vec4 sampledDiffuseColor = texture2D(map, vCropUv);
+           diffuseColor *= sampledDiffuseColor;
+         #endif`
+      );
+    };
+
+    return mat;
+  }, [crackedTex]);
+
   const strokeMat = useMemo(
     () => new THREE.MeshBasicMaterial({ color: 0x606060, side: THREE.DoubleSide }),
     []
   );
 
-  // Grid positions + per-scale random seeds for the shiver
-  const { basePositions, rowIndices, shiverSeeds } = useMemo(() => {
+  // Grid positions + row indices
+  const { basePositions, rowIndices } = useMemo(() => {
     const positions = [];
     const ri = [];
-    const seeds = [];
     const rowSpacing = h * 0.45;
     const colSpacing = w;
     for (let row = 0; row < rows; row++) {
@@ -131,42 +146,62 @@ function ScalesInstanced({ scaleSize }) {
         const y = ((rows - 1) / 2 - row) * rowSpacing;
         positions.push(x, y, 0);
         ri.push(row);
-        // Each scale gets unique timing offsets for organic shiver
-        seeds.push({
-          phase: Math.random() * Math.PI * 2,
-          freq: 0.8 + Math.random() * 0.8,   // how fast it shivers
-          amp: 0.008 + Math.random() * 0.012, // how far it swings (very subtle)
-        });
       }
     }
-    return { basePositions: positions, rowIndices: ri, shiverSeeds: seeds };
+    return { basePositions: positions, rowIndices: ri };
   }, [rows, cols, w, h]);
+
+  // Ripple state — wide waves that sweep through, scales pendulum-swing
+  const rippleState = useRef({
+    active: [],
+    nextRippleTime: 1.5 + Math.random() * 2,
+  });
 
   const dummy = useMemo(() => new THREE.Object3D(), []);
 
   useFrame(({ clock }) => {
     if (!faceRef.current) return;
     const t = clock.getElapsedTime();
+    const rs = rippleState.current;
+
+    // Spawn ripple waves occasionally
+    if (t > rs.nextRippleTime) {
+      rs.active.push({
+        originY: (Math.random() - 0.5) * viewport.height,
+        direction: Math.random() > 0.5 ? 1 : -1,
+        startTime: t,
+        speed: 5 + Math.random() * 3,
+        strength: 0.06 + Math.random() * 0.06,
+      });
+      rs.nextRippleTime = t + 2.5 + Math.random() * 4;
+      if (rs.active.length > 3) rs.active.shift();
+    }
 
     for (let i = 0; i < count; i++) {
       const bx = basePositions[i * 3];
       const by = basePositions[i * 3 + 1];
       const row = rowIndices[i];
-      const seed = shiverSeeds[i];
 
-      // Subtle shiver: rotate around Y axis (left-right swing),
-      // hinged at the broad top. Each scale has its own rhythm.
-      // Layered sine waves at different frequencies for irregularity.
-      const rotY =
-        Math.sin(t * seed.freq + seed.phase) * seed.amp +
-        Math.sin(t * seed.freq * 1.7 + seed.phase * 0.6) * seed.amp * 0.5 +
-        Math.sin(t * seed.freq * 0.3 + seed.phase * 1.4) * seed.amp * 0.3;
+      // Sum Z-axis rotation (pendulum swing) from all active ripples
+      let rotZ = 0;
+      for (const rip of rs.active) {
+        const elapsed = t - rip.startTime;
+        const waveFrontY = rip.originY + elapsed * rip.speed * rip.direction;
+        const delta = (by - waveFrontY) * rip.direction;
 
-      // Upper rows in front (pointed tips overlap broad tops below)
+        // Wide envelope for big sweeping ripple
+        const envelope = Math.exp(-(delta * delta) / 4);
+        const fade = Math.max(0, 1 - elapsed / 5);
+        const distanceFade = Math.max(0, 1 - (elapsed * rip.speed) / (viewport.height * 2));
+        rotZ += Math.sin(delta * 2) * rip.strength * envelope * fade * distanceFade;
+      }
+
+      // Upper rows in front
       const zLayer = (rows - row) * 0.02;
 
+      // Z rotation = pendulum swing (left/right, stays flat)
       dummy.position.set(bx, by, zLayer);
-      dummy.rotation.set(0, rotY, 0);
+      dummy.rotation.set(0, 0, rotZ);
       dummy.updateMatrix();
       faceRef.current.setMatrixAt(i, dummy.matrix);
 
