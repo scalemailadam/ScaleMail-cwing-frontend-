@@ -93,35 +93,48 @@ function ScalesInstanced({ scaleSize }) {
     mat.onBeforeCompile = (shader) => {
       shader.uniforms.cropScale = { value: cropScale };
 
-      // Add instance attribute declaration to vertex shader
+      // Add instance attribute + local UV varying to vertex shader
       shader.vertexShader = shader.vertexShader.replace(
         "void main() {",
         `attribute vec2 aUvOffset;
          varying vec2 vCropUv;
+         varying vec2 vLocalUv;
          uniform float cropScale;
          void main() {`
       );
 
-      // Pass cropped UV to fragment shader
+      // Pass both cropped UV and local UV to fragment shader
       shader.vertexShader = shader.vertexShader.replace(
         "#include <uv_vertex>",
         `#include <uv_vertex>
-         vCropUv = uv * cropScale + aUvOffset;`
+         vCropUv = uv * cropScale + aUvOffset;
+         vLocalUv = uv;`
       );
 
-      // Declare the varying in fragment shader
+      // Declare varyings in fragment shader
       shader.fragmentShader = shader.fragmentShader.replace(
         "void main() {",
         `varying vec2 vCropUv;
+         varying vec2 vLocalUv;
          void main() {`
       );
 
-      // Replace texture sampling to use our cropped UVs
+      // Layer: per-scale gradient × cracked texture crop
+      // Gradient: light at top (vLocalUv.y=1) → darker at bottom (vLocalUv.y=0)
+      // Central ridge: lighter in center (vLocalUv.x≈0.5) → darker at edges
       shader.fragmentShader = shader.fragmentShader.replace(
         "#include <map_fragment>",
         `#ifdef USE_MAP
-           vec4 sampledDiffuseColor = texture2D(map, vCropUv);
-           diffuseColor *= sampledDiffuseColor;
+           // Per-scale vertical gradient (top bright, bottom darker)
+           float vGrad = mix(0.6, 1.0, vLocalUv.y);
+           // Central ridge highlight
+           float ridge = 1.0 - 0.2 * pow(abs(vLocalUv.x - 0.5) * 2.0, 1.5);
+           // Combined per-scale shading
+           float scaleShade = vGrad * ridge;
+           // Cracked texture crop
+           vec4 crackedColor = texture2D(map, vCropUv);
+           // Layer: gradient underneath, cracked texture on top
+           diffuseColor.rgb *= scaleShade * crackedColor.rgb;
          #endif`
       );
     };
