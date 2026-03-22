@@ -8,138 +8,222 @@ export default function ArmorBackground() {
   return (
     <div className="fixed inset-0 -z-10 pointer-events-none">
       <Canvas camera={{ position: [0, 0, 20], fov: 50 }} dpr={[1, 1.5]}>
-        <ambientLight intensity={0.8} />
-        <directionalLight position={[5, 10, 10]} intensity={0.6} />
-        <ScalesInstanced speed={0.8} amplitude={0.25} scaleSize={2} />
+        <ambientLight intensity={0.9} />
+        <directionalLight position={[0, 5, 10]} intensity={0.5} />
+        <ScalesInstanced scaleSize={2} />
       </Canvas>
     </div>
   );
 }
 
-// Per-scale vertical gradient: light grey top → mid grey bottom
-function makeGradientTexture() {
-  const size = 128;
+// ── Grey scale texture with central ridge shading ──────────────────
+// Mimics the reference image: lighter ridge down the centre, darker
+// falloff toward the left/right edges, with a subtle vertical gradient
+// (slightly lighter at the pointed top, slightly darker at the round base).
+function makeScaleTexture() {
+  const w = 128;
+  const h = 256;
   const canvas = document.createElement("canvas");
-  canvas.width = 1;
-  canvas.height = size;
+  canvas.width = w;
+  canvas.height = h;
   const ctx = canvas.getContext("2d");
-  const grad = ctx.createLinearGradient(0, 0, 0, size);
-  grad.addColorStop(0, "#d4d4d4");
-  grad.addColorStop(1, "#8a8a8a");
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, 1, size);
+
+  // Base vertical gradient (top lighter → bottom slightly darker)
+  const vGrad = ctx.createLinearGradient(0, 0, 0, h);
+  vGrad.addColorStop(0, "#c8c8c8");
+  vGrad.addColorStop(0.5, "#b0b0b0");
+  vGrad.addColorStop(1, "#909090");
+  ctx.fillStyle = vGrad;
+  ctx.fillRect(0, 0, w, h);
+
+  // Central ridge highlight (horizontal gradient, additive-ish via overlay)
+  ctx.globalCompositeOperation = "lighter";
+  const rGrad = ctx.createLinearGradient(0, 0, w, 0);
+  rGrad.addColorStop(0, "rgba(0,0,0,0)");
+  rGrad.addColorStop(0.35, "rgba(0,0,0,0)");
+  rGrad.addColorStop(0.5, "rgba(60,60,60,1)");
+  rGrad.addColorStop(0.65, "rgba(0,0,0,0)");
+  rGrad.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = rGrad;
+  ctx.fillRect(0, 0, w, h);
+
+  // Darken the edges
+  ctx.globalCompositeOperation = "multiply";
+  const eGrad = ctx.createLinearGradient(0, 0, w, 0);
+  eGrad.addColorStop(0, "rgba(120,120,120,1)");
+  eGrad.addColorStop(0.2, "rgba(200,200,200,1)");
+  eGrad.addColorStop(0.5, "rgba(255,255,255,1)");
+  eGrad.addColorStop(0.8, "rgba(200,200,200,1)");
+  eGrad.addColorStop(1, "rgba(120,120,120,1)");
+  ctx.fillStyle = eGrad;
+  ctx.fillRect(0, 0, w, h);
+
+  ctx.globalCompositeOperation = "source-over";
+
   const tex = new THREE.CanvasTexture(canvas);
   tex.needsUpdate = true;
   return tex;
 }
 
-function makeScallopShape(w, h) {
+// ── Teardrop / guitar-pick scale shape ─────────────────────────────
+// Pointed at top, wide and rounded at bottom.
+// Origin placed at the TOP TIP so rotation pivots there (hinge point).
+function makeScaleShape(w, h) {
   const shape = new THREE.Shape();
-  shape.moveTo(-w / 2, h / 2);
-  shape.lineTo(w / 2, h / 2);
-  shape.lineTo(w / 2, 0);
-  shape.absarc(0, 0, w / 2, 0, Math.PI, true);
-  shape.closePath();
+  const hw = w / 2;
+
+  // Start at the pointed top (origin = 0,0)
+  shape.moveTo(0, 0);
+
+  // Curve out to the right, widening toward the bottom
+  shape.bezierCurveTo(hw * 0.3, -h * 0.15, hw, -h * 0.35, hw, -h * 0.55);
+
+  // Round bottom arc
+  shape.bezierCurveTo(hw, -h * 0.8, hw * 0.4, -h, 0, -h);
+  shape.bezierCurveTo(-hw * 0.4, -h, -hw, -h * 0.8, -hw, -h * 0.55);
+
+  // Curve back up to the left, narrowing toward the top
+  shape.bezierCurveTo(-hw, -h * 0.35, -hw * 0.3, -h * 0.15, 0, 0);
+
   return shape;
 }
 
-function ScalesInstanced({ speed, amplitude, scaleSize }) {
+function ScalesInstanced({ scaleSize }) {
   const faceRef = useRef();
   const strokeRef = useRef();
   const { viewport } = useThree();
 
   const w = scaleSize;
-  const h = scaleSize;
-  const cols = Math.ceil(viewport.width / w) + 2;
-  const rows = Math.ceil(viewport.height / (h * 0.5)) + 2;
+  const h = scaleSize * 1.4; // taller than wide, like the reference
+  const cols = Math.ceil(viewport.width / w) + 4;
+  const rows = Math.ceil(viewport.height / (h * 0.45)) + 4;
   const count = rows * cols;
 
-  // Face geometry
+  // Face geometry — origin at the top tip (hinge point)
   const faceGeo = useMemo(
-    () => new THREE.ShapeGeometry(makeScallopShape(w, h), 8),
+    () => new THREE.ShapeGeometry(makeScaleShape(w, h), 12),
     [w, h]
   );
 
-  // Stroke geometry — slightly larger shape, rendered behind
-  const strokeScale = 1.04;
+  // Stroke geometry — slightly larger
   const strokeGeo = useMemo(
-    () => new THREE.ShapeGeometry(makeScallopShape(w * strokeScale, h * strokeScale), 8),
+    () => new THREE.ShapeGeometry(makeScaleShape(w * 1.05, h * 1.03), 12),
     [w, h]
   );
 
-  // Gradient material for faces
-  const gradientMap = useMemo(() => makeGradientTexture(), []);
+  // Materials
+  const scaleTexture = useMemo(() => makeScaleTexture(), []);
   const faceMat = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
-        map: gradientMap,
-        metalness: 0.3,
-        roughness: 0.7,
+        map: scaleTexture,
+        metalness: 0.35,
+        roughness: 0.65,
+        side: THREE.DoubleSide,
       }),
-    [gradientMap]
+    [scaleTexture]
   );
-
-  // Dark flat material for stroke outlines
   const strokeMat = useMemo(
-    () =>
-      new THREE.MeshBasicMaterial({ color: 0x555555 }),
+    () => new THREE.MeshBasicMaterial({ color: 0x606060, side: THREE.DoubleSide }),
     []
   );
 
-  // Precompute base positions + random phases
-  const { basePositions, phases } = useMemo(() => {
+  // Grid positions — each scale's HINGE POINT (top tip).
+  // Even rows offset by half a column for brick-like tiling.
+  // Rows ordered top-to-bottom so lower rows render on top (natural overlap).
+  const { basePositions, rowIndices } = useMemo(() => {
     const positions = [];
-    const ph = [];
-    const rowSpacing = h * 0.5;
+    const ri = [];
+    const rowSpacing = h * 0.45; // overlap amount
     const colSpacing = w;
     for (let row = 0; row < rows; row++) {
+      const xOff = row % 2 === 0 ? 0 : colSpacing / 2;
       for (let col = 0; col < cols; col++) {
-        const x = (col - (cols - 1) / 2) * colSpacing;
+        const x = (col - (cols - 1) / 2) * colSpacing + xOff;
         const y = ((rows - 1) / 2 - row) * rowSpacing;
         positions.push(x, y, 0);
-        ph.push(Math.random() * Math.PI * 2);
+        ri.push(row);
       }
     }
-    return { basePositions: positions, phases: ph };
+    return { basePositions: positions, rowIndices: ri };
   }, [rows, cols, w, h]);
 
-  const dummy = useMemo(() => new THREE.Object3D(), []);
-  const dummyStroke = useMemo(() => new THREE.Object3D(), []);
+  // Ripple state — occasional waves instead of constant motion
+  const rippleState = useRef({
+    // Each ripple: { originX, originY, startTime, speed, strength }
+    active: [],
+    nextRippleTime: 2 + Math.random() * 3,
+  });
 
-  // Animate Y + Z per instance — X stays locked
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+
   useFrame(({ clock }) => {
     if (!faceRef.current) return;
-    const t = clock.getElapsedTime() * speed;
-    for (let i = 0; i < count; i++) {
-      const baseX = basePositions[i * 3];
-      const baseY = basePositions[i * 3 + 1];
-      const phase = phases[i];
-      const yOffset = Math.sin(t + phase) * amplitude * 0.5;
-      const zOffset = Math.sin(t + phase) * amplitude;
+    const t = clock.getElapsedTime();
+    const rs = rippleState.current;
 
-      // Face (slightly in front)
-      dummy.position.set(baseX, baseY + yOffset, zOffset);
+    // Spawn new ripple occasionally
+    if (t > rs.nextRippleTime) {
+      rs.active.push({
+        originX: (Math.random() - 0.5) * viewport.width,
+        originY: (Math.random() - 0.5) * viewport.height,
+        startTime: t,
+        speed: 6 + Math.random() * 4, // world units per second
+        strength: 0.15 + Math.random() * 0.15,
+      });
+      // Next ripple in 3–7 seconds
+      rs.nextRippleTime = t + 3 + Math.random() * 4;
+      // Prune old ripples (keep last 4)
+      if (rs.active.length > 4) rs.active.shift();
+    }
+
+    for (let i = 0; i < count; i++) {
+      const bx = basePositions[i * 3];
+      const by = basePositions[i * 3 + 1];
+      const row = rowIndices[i];
+
+      // Sum rotation from all active ripples
+      let rotX = 0;
+      for (const rip of rs.active) {
+        const dist = Math.sqrt((bx - rip.originX) ** 2 + (by - rip.originY) ** 2);
+        const elapsed = t - rip.startTime;
+        const waveFront = elapsed * rip.speed;
+        const delta = dist - waveFront;
+
+        // Gaussian-ish envelope around the wave front
+        const envelope = Math.exp(-(delta * delta) / 3);
+        // Fade out over time
+        const fade = Math.max(0, 1 - elapsed / 4);
+        rotX += Math.sin(delta * 2) * rip.strength * envelope * fade;
+      }
+
+      // Hinge rotation: pivot at top tip, rotate around X axis.
+      // Positive rotX tilts the bottom toward the viewer.
+      // z-layer: higher rows (larger row index = lower on screen) render in front
+      const zLayer = row * 0.02;
+
+      dummy.position.set(bx, by, zLayer);
+      dummy.rotation.set(rotX, 0, 0);
       dummy.updateMatrix();
       faceRef.current.setMatrixAt(i, dummy.matrix);
 
-      // Stroke (slightly behind)
-      dummyStroke.position.set(baseX, baseY + yOffset, zOffset - 0.01);
-      dummyStroke.updateMatrix();
-      strokeRef.current.setMatrixAt(i, dummyStroke.matrix);
+      // Stroke follows the same transform, slightly behind
+      dummy.position.z = zLayer - 0.005;
+      dummy.updateMatrix();
+      strokeRef.current.setMatrixAt(i, dummy.matrix);
     }
+
     faceRef.current.instanceMatrix.needsUpdate = true;
     strokeRef.current.instanceMatrix.needsUpdate = true;
   });
 
   return (
     <>
-      {/* Stroke layer — dark, slightly larger, slightly behind */}
       <instancedMesh
         ref={strokeRef}
         args={[strokeGeo, strokeMat, count]}
         frustumCulled={false}
       />
-      {/* Face layer — gradient, in front */}
       <instancedMesh
         ref={faceRef}
         args={[faceGeo, faceMat, count]}
