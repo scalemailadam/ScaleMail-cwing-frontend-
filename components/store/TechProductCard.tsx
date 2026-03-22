@@ -21,7 +21,7 @@ const TechProductCard = ({ id, code, name, image }: TechProductCardProps) => {
       onMouseLeave={() => setIsHovered(false)}
       onClick={() => router.push(`/store/product/${id}`)}
     >
-      <div className="relative overflow-hidden bg-tech-gray-100 aspect-square">
+      <div className="relative overflow-hidden bg-white aspect-square">
         <img
           src={image}
           alt={code}
@@ -32,7 +32,7 @@ const TechProductCard = ({ id, code, name, image }: TechProductCardProps) => {
       <div className="p-2 bg-tech-white">
         <div className="font-mono text-xs text-tech-black tracking-widest mb-1">{code}</div>
         {isHovered && (
-          <div className="font-mono text-xs text-tech-gray-600 tracking-wide">{name}</div>
+          <div className="font-mono text-xs text-tech-gray-800 tracking-wide">{name}</div>
         )}
       </div>
     </div>

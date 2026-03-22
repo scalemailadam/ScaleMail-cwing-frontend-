@@ -47,7 +47,7 @@ export default function ProductDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-tech-white">
+    <div className="min-h-screen bg-tech-white text-tech-gray-800">
       <StoreHeader sortOrder={sortOrder} onSortChange={setSortOrder} searchQuery={searchQuery} onSearchChange={setSearchQuery} />
       <main className="pt-16">
         <button
@@ -59,14 +59,14 @@ export default function ProductDetail() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[calc(100vh-4rem)]">
           {/* Image */}
-          <div className="relative bg-tech-gray-100 flex items-center justify-center min-h-[60vh] md:min-h-[70vh] lg:h-[calc(100vh-4rem)]">
+          <div className="relative bg-white flex items-center justify-center min-h-[60vh] md:min-h-[70vh] lg:h-[calc(100vh-4rem)]">
             <img src={currentImage} alt={product.code} className="w-full h-full object-contain p-4 md:p-8" />
             {activeImages.length > 1 && (
               <>
-                <button onClick={() => setCurrentImageIndex((p) => (p === 0 ? activeImages.length - 1 : p - 1))} className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-tech-white/80 hover:bg-tech-white transition-colors">
+                <button onClick={() => setCurrentImageIndex((p) => (p === 0 ? activeImages.length - 1 : p - 1))} className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-tech-gray-800 bg-white/80 hover:bg-white transition-colors">
                   <ChevronLeft className="w-5 h-5" />
                 </button>
-                <button onClick={() => setCurrentImageIndex((p) => (p === activeImages.length - 1 ? 0 : p + 1))} className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-tech-white/80 hover:bg-tech-white transition-colors">
+                <button onClick={() => setCurrentImageIndex((p) => (p === activeImages.length - 1 ? 0 : p + 1))} className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-tech-gray-800 bg-white/80 hover:bg-white transition-colors">
                   <ChevronRight className="w-5 h-5" />
                 </button>
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
@@ -82,13 +82,13 @@ export default function ProductDetail() {
           <div className="p-8 lg:p-16 flex flex-col justify-center">
             <div className="max-w-md">
               <h1 className="font-mono text-sm tracking-widest mb-2">{product.code}</h1>
-              <h2 className="font-mono text-xs tracking-wide text-tech-gray-600 mb-8">{product.name}</h2>
+              <h2 className="font-mono text-xs tracking-wide text-tech-gray-800 mb-8">{product.name}</h2>
               <div className="font-mono text-sm tracking-widest mb-8">${product.price.toLocaleString()}</div>
-              <p className="font-mono text-xs leading-relaxed text-tech-gray-600 mb-12 whitespace-pre-line">{product.description}</p>
+              <p className="font-mono text-xs leading-relaxed text-tech-gray-800 mb-12 whitespace-pre-line">{product.description}</p>
 
               {product.sizes && product.sizes.length > 0 && (
                 <div className="mb-8">
-                  <div className="font-mono text-xs tracking-widest text-tech-gray-700 mb-3">SIZE</div>
+                  <div className="font-mono text-xs tracking-widest text-tech-gray-800 mb-3">SIZE</div>
                   <div className="flex gap-2">
                     {product.sizes.map((size) => (
                       <button key={size} onClick={() => setSelectedSize(size === selectedSize ? null : size)}
@@ -102,7 +102,7 @@ export default function ProductDetail() {
 
               {product.colors && product.colors.length > 0 && (
                 <div className="mb-8">
-                  <div className="font-mono text-xs tracking-widest text-tech-gray-700 mb-3">
+                  <div className="font-mono text-xs tracking-widest text-tech-gray-800 mb-3">
                     COLOR{selectedColor ? ` — ${selectedColor.toUpperCase()}` : ""}
                   </div>
                   <div className="flex gap-3">

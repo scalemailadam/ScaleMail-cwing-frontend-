@@ -8,7 +8,7 @@ export default function StorePage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
-    <div className="min-h-screen bg-tech-white flex flex-col">
+    <div className="min-h-screen bg-tech-white text-tech-gray-800 flex flex-col">
       <StoreHeader
         sortOrder={sortOrder}
         onSortChange={setSortOrder}

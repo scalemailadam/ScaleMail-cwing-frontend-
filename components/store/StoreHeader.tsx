@@ -17,7 +17,7 @@ const StoreHeader = ({ sortOrder, onSortChange, searchQuery, onSearchChange }: S
   const { totalItems } = useCart();
 
   return (
-    <header className="border-b border-tech-gray-200 bg-tech-white sticky top-0 z-50">
+    <header className="border-b border-tech-gray-200 bg-tech-white text-tech-gray-800 sticky top-0 z-50">
       <div className="px-4">
         <div className="flex items-center justify-between h-12">
           {/* Logo */}
@@ -30,7 +30,7 @@ const StoreHeader = ({ sortOrder, onSortChange, searchQuery, onSearchChange }: S
             <div className="relative">
               <button
                 onClick={() => setShowSortMenu(!showSortMenu)}
-                className="flex items-center gap-1 text-xs font-mono font-medium text-tech-black hover:text-tech-gray-600 transition-instant uppercase tracking-widest"
+                className="flex items-center gap-1 text-xs font-mono font-medium text-tech-black hover:text-tech-gray-800 transition-instant uppercase tracking-widest"
               >
                 SORT
                 <ChevronDown className="h-3 w-3" />
@@ -46,7 +46,7 @@ const StoreHeader = ({ sortOrder, onSortChange, searchQuery, onSearchChange }: S
                     <button
                       key={value}
                       onClick={() => { onSortChange(value); setShowSortMenu(false); }}
-                      className={`block w-full text-left px-4 py-2 text-xs font-mono tracking-widest hover:bg-tech-gray-100 ${sortOrder === value ? "text-tech-black font-medium" : "text-tech-gray-700"}`}
+                      className={`block w-full text-left px-4 py-2 text-xs font-mono tracking-widest hover:bg-tech-gray-100 ${sortOrder === value ? "text-tech-black font-medium" : "text-tech-gray-800"}`}
                     >
                       {label}
                     </button>
@@ -57,7 +57,7 @@ const StoreHeader = ({ sortOrder, onSortChange, searchQuery, onSearchChange }: S
 
             <button
               onClick={() => setShowSearch(!showSearch)}
-              className="text-xs font-mono font-medium text-tech-black hover:text-tech-gray-600 transition-instant uppercase tracking-widest"
+              className="text-xs font-mono font-medium text-tech-black hover:text-tech-gray-800 transition-instant uppercase tracking-widest"
             >
               SEARCH
             </button>
@@ -67,13 +67,13 @@ const StoreHeader = ({ sortOrder, onSortChange, searchQuery, onSearchChange }: S
           <div className="flex items-center space-x-4">
             <button
               onClick={() => router.push("/store/contact")}
-              className="text-xs font-mono font-medium text-tech-black hover:text-tech-gray-600 transition-instant uppercase tracking-widest"
+              className="text-xs font-mono font-medium text-tech-black hover:text-tech-gray-800 transition-instant uppercase tracking-widest"
             >
               CONTACT US
             </button>
             <button
               onClick={() => router.push("/store/cart")}
-              className="text-xs font-mono font-medium text-tech-black hover:text-tech-gray-600 transition-instant uppercase tracking-widest"
+              className="text-xs font-mono font-medium text-tech-black hover:text-tech-gray-800 transition-instant uppercase tracking-widest"
             >
               🛒 CART ({totalItems})
             </button>

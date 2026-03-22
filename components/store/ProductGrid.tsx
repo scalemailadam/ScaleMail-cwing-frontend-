@@ -30,7 +30,7 @@ const ProductGrid = ({ sortOrder, searchQuery }: ProductGridProps) => {
           ))}
         </div>
         {filtered.length === 0 && (
-          <div className="py-16 text-center font-mono text-xs text-tech-gray-700 tracking-widest">
+          <div className="py-16 text-center font-mono text-xs text-tech-gray-800 tracking-widest">
             NO PRODUCTS FOUND
           </div>
         )}
