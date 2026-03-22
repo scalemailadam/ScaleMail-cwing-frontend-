@@ -7,15 +7,9 @@ import { useCart } from "@/context/CartContext";
 
 export default function CartPage() {
   const router = useRouter();
-  const { items, removeItem, updateQuantity, clearCart, totalItems, totalPrice } = useCart();
+  const { items, removeItem, updateQuantity, totalItems, totalPrice } = useCart();
   const [sortOrder, setSortOrder] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [showForm, setShowForm] = useState(false);
-
-  const orderMessage = items
-    .map((item) => `${item.code} - ${item.name} / Size: ${item.size} / Color: ${item.color} / Qty: ${item.quantity} / USD ${(item.price * item.quantity).toLocaleString()}`)
-    .join("\n");
-  const fullMessage = `ORDER REQUEST FOR:\n${orderMessage}\nTOTAL: USD ${totalPrice.toLocaleString()}`;
 
   return (
     <div className="min-h-screen bg-tech-white text-tech-gray-800 flex flex-col">
@@ -67,7 +61,7 @@ export default function CartPage() {
                 </div>
                 <div className="flex justify-between font-mono text-xs tracking-widest">
                   <span className="text-tech-gray-800">SHIPPING</span>
-                  <span>CALCULATED AT CHECKOUT</span>
+                  <span>$15.00 FLAT RATE</span>
                 </div>
               </div>
               <div className="border-t border-tech-gray-200 pt-4 mb-4">
@@ -79,50 +73,12 @@ export default function CartPage() {
               <p className="font-mono text-[10px] leading-relaxed text-tech-gray-800 tracking-wide mb-8">
                 Each piece is made to order—cut, assembled, and finished specifically for you. Please allow time for production; thoughtful construction isn't rushed. Thank you for choosing Scale Mail and we'll get back to you confirming your order as soon as possible.
               </p>
-              <button onClick={() => setShowForm(!showForm)} className="w-full bg-tech-black text-tech-white font-mono text-xs tracking-widest py-4 hover:bg-tech-gray-800 transition-colors">
-                {showForm ? "CANCEL" : "ORDER VIA EMAIL"}
+              <button
+                onClick={() => router.push("/store/checkout")}
+                className="w-full bg-tech-black text-tech-white font-mono text-xs tracking-widest py-4 hover:bg-tech-gray-800 transition-colors cursor-pointer"
+              >
+                PROCEED TO CHECKOUT
               </button>
-
-              {showForm && (
-                <form
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    const formData = new FormData(e.currentTarget);
-                    await fetch("https://formsubmit.co/ajax/contact@scalemailstudio.com", { method: "POST", body: formData });
-                    clearCart();
-                    router.push("/store/thank-you?type=order");
-                  }}
-                  className="mt-6 space-y-4"
-                >
-                  <input type="hidden" name="_subject" value="New Order from Scale Mail" />
-                  <input type="hidden" name="_captcha" value="false" />
-                  <input type="hidden" name="message" value={fullMessage} />
-                  {[
-                    { name: "name", label: "NAME", type: "text", required: true, maxLength: 100, placeholder: "YOUR NAME" },
-                    { name: "email", label: "EMAIL", type: "email", required: true, maxLength: 255, placeholder: "YOUR@EMAIL.COM" },
-                  ].map(({ name, label, type, required, maxLength, placeholder }) => (
-                    <div key={name}>
-                      <label className="font-mono text-xs tracking-widest text-tech-gray-800 block mb-2">{label}</label>
-                      <input type={type} name={name} required={required} maxLength={maxLength} placeholder={placeholder}
-                        className="w-full font-mono text-xs tracking-widest border border-tech-gray-300 px-4 py-3 bg-transparent outline-none focus:border-tech-black transition-colors placeholder:text-tech-gray-400" />
-                    </div>
-                  ))}
-                  <div>
-                    <label className="font-mono text-xs tracking-widest text-tech-gray-800 block mb-2">NOTE (OPTIONAL)</label>
-                    <textarea name="note" maxLength={500} rows={3} placeholder="ADD A NOTE TO YOUR ORDER..."
-                      className="w-full font-mono text-xs tracking-widest border border-tech-gray-300 px-4 py-3 bg-transparent outline-none focus:border-tech-black transition-colors placeholder:text-tech-gray-400 resize-none" />
-                  </div>
-                  <div>
-                    <label className="font-mono text-xs tracking-widest text-tech-gray-800 block mb-2">ORDER REQUEST FOR:</label>
-                    <div className="w-full font-mono text-xs tracking-wide border border-tech-gray-200 bg-white px-4 py-3 whitespace-pre-line text-tech-gray-800">
-                      {orderMessage}{"\n"}TOTAL: USD {totalPrice.toLocaleString()}
-                    </div>
-                  </div>
-                  <button type="submit" className="w-full bg-tech-black text-tech-white font-mono text-xs tracking-widest py-4 hover:bg-tech-gray-800 transition-colors">
-                    SEND ORDER
-                  </button>
-                </form>
-              )}
             </div>
           </div>
         )}
