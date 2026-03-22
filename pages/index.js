@@ -43,6 +43,7 @@ export default function Home() {
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden">
       <ArmorBackground />
+      <div className="fixed inset-0 bg-black/15 pointer-events-none z-[1]" />
       <Header onMenuItemClick={(slug) => setNavModalSlug(slug)} />
 
       <Desktop

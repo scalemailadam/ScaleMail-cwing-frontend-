@@ -1,4 +1,4 @@
-const PAYPAL_API = "https://api-m.sandbox.paypal.com";
+const PAYPAL_API = "https://api-m.paypal.com";
 
 async function getAccessToken() {
   const credentials = Buffer.from(
