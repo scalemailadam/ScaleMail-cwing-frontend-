@@ -147,9 +147,8 @@ function ScalesInstanced({ scaleSize }) {
     return { basePositions: positions, rowIndices: ri };
   }, [rows, cols, w, h]);
 
-  // Ripple state — occasional waves instead of constant motion
+  // Ripple state — wide horizontal waves that sweep vertically
   const rippleState = useRef({
-    // Each ripple: { originX, originY, startTime, speed, strength }
     active: [],
     nextRippleTime: 2 + Math.random() * 3,
   });
@@ -161,19 +160,17 @@ function ScalesInstanced({ scaleSize }) {
     const t = clock.getElapsedTime();
     const rs = rippleState.current;
 
-    // Spawn new ripple occasionally
+    // Spawn a new horizontal wave occasionally
     if (t > rs.nextRippleTime) {
       rs.active.push({
-        originX: (Math.random() - 0.5) * viewport.width,
         originY: (Math.random() - 0.5) * viewport.height,
+        direction: Math.random() > 0.5 ? 1 : -1, // sweep up or down
         startTime: t,
-        speed: 6 + Math.random() * 4, // world units per second
-        strength: 0.15 + Math.random() * 0.15,
+        speed: 4 + Math.random() * 3,
+        strength: 0.12 + Math.random() * 0.12,
       });
-      // Next ripple in 3–7 seconds
-      rs.nextRippleTime = t + 3 + Math.random() * 4;
-      // Prune old ripples (keep last 4)
-      if (rs.active.length > 4) rs.active.shift();
+      rs.nextRippleTime = t + 3 + Math.random() * 5;
+      if (rs.active.length > 3) rs.active.shift();
     }
 
     for (let i = 0; i < count; i++) {
@@ -184,22 +181,23 @@ function ScalesInstanced({ scaleSize }) {
       // Sum rotation from all active ripples
       let rotX = 0;
       for (const rip of rs.active) {
-        const dist = Math.sqrt((bx - rip.originX) ** 2 + (by - rip.originY) ** 2);
         const elapsed = t - rip.startTime;
-        const waveFront = elapsed * rip.speed;
-        const delta = dist - waveFront;
+        // Wave front sweeps vertically (wide horizontal line)
+        const waveFrontY = rip.originY + elapsed * rip.speed * rip.direction;
+        const delta = (by - waveFrontY) * rip.direction;
 
-        // Gaussian-ish envelope around the wave front
-        const envelope = Math.exp(-(delta * delta) / 3);
-        // Fade out over time
-        const fade = Math.max(0, 1 - elapsed / 4);
-        rotX += Math.sin(delta * 2) * rip.strength * envelope * fade;
+        // Tight envelope — wave is a narrow band sweeping through
+        const envelope = Math.exp(-(delta * delta) / 2);
+        // Fade out as it travels further — peters out over time
+        const fade = Math.max(0, 1 - elapsed / 5);
+        // Strength also decays with distance traveled
+        const distanceFade = Math.max(0, 1 - elapsed * rip.speed / (viewport.height * 1.5));
+        rotX += Math.sin(delta * 3) * rip.strength * envelope * fade * distanceFade;
       }
 
-      // Hinge rotation: pivot at top tip, rotate around X axis.
-      // Positive rotX tilts the bottom toward the viewer.
-      // z-layer: higher rows (larger row index = lower on screen) render in front
-      const zLayer = row * 0.02;
+      // z-layer: UPPER rows render in FRONT (pointed tips overlap the
+      // broad tops of the scales below them)
+      const zLayer = (rows - row) * 0.02;
 
       dummy.position.set(bx, by, zLayer);
       dummy.rotation.set(rotX, 0, 0);
