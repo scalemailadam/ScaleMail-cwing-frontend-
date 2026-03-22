@@ -1,5 +1,6 @@
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import StoreHeader from "@/components/store/StoreHeader";
@@ -21,6 +22,21 @@ export default function ProductDetail() {
   const colorVariant = selectedColor && product?.colors ? product.colors.find((c) => c.name === selectedColor) : null;
   const activeImages = colorVariant?.images?.length ? colorVariant.images : product?.images ?? [];
   const currentImage = activeImages[currentImageIndex] ?? activeImages[0];
+
+  // Preload all product images so switching is instant
+  useEffect(() => {
+    if (!product) return;
+    const allImages = new Set<string>();
+    product.images.forEach((img) => allImages.add(img));
+    product.colors?.forEach((c) => {
+      if (c.image) allImages.add(c.image);
+      c.images?.forEach((img) => allImages.add(img));
+    });
+    allImages.forEach((src) => {
+      const img = new window.Image();
+      img.src = src;
+    });
+  }, [product]);
 
   if (!product) {
     return (
@@ -60,16 +76,23 @@ export default function ProductDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[calc(100vh-4rem)]">
           {/* Image */}
           <div className="relative bg-white flex items-center justify-center min-h-[60vh] md:min-h-[70vh] lg:h-[calc(100vh-4rem)]">
-            <img src={currentImage} alt={product.code} className="w-full h-full object-contain p-4 md:p-8" />
+            <Image
+              src={currentImage}
+              alt={product.code}
+              fill
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              className="object-contain p-4 md:p-8"
+              priority
+            />
             {activeImages.length > 1 && (
               <>
-                <button onClick={() => setCurrentImageIndex((p) => (p === 0 ? activeImages.length - 1 : p - 1))} className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-tech-gray-800 bg-white/80 hover:bg-white transition-colors">
+                <button onClick={() => setCurrentImageIndex((p) => (p === 0 ? activeImages.length - 1 : p - 1))} className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-tech-gray-800 bg-white/80 hover:bg-white transition-colors z-10">
                   <ChevronLeft className="w-5 h-5" />
                 </button>
-                <button onClick={() => setCurrentImageIndex((p) => (p === activeImages.length - 1 ? 0 : p + 1))} className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-tech-gray-800 bg-white/80 hover:bg-white transition-colors">
+                <button onClick={() => setCurrentImageIndex((p) => (p === activeImages.length - 1 ? 0 : p + 1))} className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-tech-gray-800 bg-white/80 hover:bg-white transition-colors z-10">
                   <ChevronRight className="w-5 h-5" />
                 </button>
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
                   {activeImages.map((_, i) => (
                     <button key={i} onClick={() => setCurrentImageIndex(i)} className={`w-2 h-2 transition-colors ${i === currentImageIndex ? "bg-tech-black" : "bg-tech-gray-400"}`} />
                   ))}

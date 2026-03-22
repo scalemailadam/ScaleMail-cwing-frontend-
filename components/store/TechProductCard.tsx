@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
+import Image from "next/image";
 
 interface TechProductCardProps {
   id: string;
@@ -22,10 +23,12 @@ const TechProductCard = ({ id, code, name, image }: TechProductCardProps) => {
       onClick={() => router.push(`/store/product/${id}`)}
     >
       <div className="relative overflow-hidden bg-white aspect-square">
-        <img
+        <Image
           src={image}
           alt={code}
-          className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+          fill
+          sizes="(max-width: 768px) 50vw, 33vw"
+          className="object-cover transition-transform duration-200 group-hover:scale-105"
         />
         <div className={`absolute inset-0 bg-tech-black/10 transition-opacity duration-200 ${isHovered ? "opacity-100" : "opacity-0"}`} />
       </div>
