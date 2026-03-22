@@ -59,7 +59,7 @@ export default function Header({ onMenuItemClick }) {
   };
 
   return (
-    <nav className="font-sfpro text-sm flex items-center justify-between px-4 lg:py-0 py-2 bg-gray-400/10 z-50">
+    <nav className="font-sfpro text-sm flex items-center justify-between px-4 lg:py-0 py-2 bg-gray-400/25 z-50">
       {/* left side: logo + (desktop‐only menus) */}
       <div className="flex items-center space-x-4">
         {logoUrl && (
