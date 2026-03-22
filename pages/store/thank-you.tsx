@@ -16,7 +16,7 @@ export default function ThankYouPage() {
         <h1 className="font-mono text-sm tracking-widest mb-4">
           {isOrder ? "THANK YOU FOR YOUR ORDER" : "THANK YOU FOR YOUR MESSAGE"}
         </h1>
-        <p className="font-mono text-xs text-tech-gray-500 tracking-wide text-center max-w-md mb-10">
+        <p className="font-mono text-xs text-tech-gray-700 tracking-wide text-center max-w-md mb-10">
           We&apos;ll get back to you as soon as possible.
         </p>
         <button

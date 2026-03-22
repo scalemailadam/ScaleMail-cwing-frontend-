@@ -88,7 +88,7 @@ export default function ProductDetail() {
 
               {product.sizes && product.sizes.length > 0 && (
                 <div className="mb-8">
-                  <div className="font-mono text-xs tracking-widest text-tech-gray-500 mb-3">SIZE</div>
+                  <div className="font-mono text-xs tracking-widest text-tech-gray-700 mb-3">SIZE</div>
                   <div className="flex gap-2">
                     {product.sizes.map((size) => (
                       <button key={size} onClick={() => setSelectedSize(size === selectedSize ? null : size)}
@@ -102,7 +102,7 @@ export default function ProductDetail() {
 
               {product.colors && product.colors.length > 0 && (
                 <div className="mb-8">
-                  <div className="font-mono text-xs tracking-widest text-tech-gray-500 mb-3">
+                  <div className="font-mono text-xs tracking-widest text-tech-gray-700 mb-3">
                     COLOR{selectedColor ? ` — ${selectedColor.toUpperCase()}` : ""}
                   </div>
                   <div className="flex gap-3">

@@ -46,7 +46,7 @@ const StoreHeader = ({ sortOrder, onSortChange, searchQuery, onSearchChange }: S
                     <button
                       key={value}
                       onClick={() => { onSortChange(value); setShowSortMenu(false); }}
-                      className={`block w-full text-left px-4 py-2 text-xs font-mono tracking-widest hover:bg-tech-gray-100 ${sortOrder === value ? "text-tech-black font-medium" : "text-tech-gray-500"}`}
+                      className={`block w-full text-left px-4 py-2 text-xs font-mono tracking-widest hover:bg-tech-gray-100 ${sortOrder === value ? "text-tech-black font-medium" : "text-tech-gray-700"}`}
                     >
                       {label}
                     </button>

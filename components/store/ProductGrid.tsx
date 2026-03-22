@@ -24,13 +24,13 @@ const ProductGrid = ({ sortOrder, searchQuery }: ProductGridProps) => {
       <div className="py-8 px-4">
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {filtered.map((product) => (
-            <div key={product.id} className="border border-tech-gray-200">
+            <div key={product.id} className="border border-white">
               <TechProductCard {...product} image={product.images[0]} />
             </div>
           ))}
         </div>
         {filtered.length === 0 && (
-          <div className="py-16 text-center font-mono text-xs text-tech-gray-500 tracking-widest">
+          <div className="py-16 text-center font-mono text-xs text-tech-gray-700 tracking-widest">
             NO PRODUCTS FOUND
           </div>
         )}
