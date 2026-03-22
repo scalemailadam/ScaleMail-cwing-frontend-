@@ -84,7 +84,7 @@ function ScalesInstanced({ scaleSize }) {
   const faceMat = useMemo(() => {
     const mat = new THREE.MeshStandardMaterial({
       map: crackedTex,
-      color: new THREE.Color(0.75, 0.75, 0.75), // base grey — lighting creates the gradient
+      color: new THREE.Color(1, 1, 1), // white base — color comes from shader gradient
       metalness: 0.3,
       roughness: 0.7,
       side: THREE.DoubleSide,
@@ -119,22 +119,23 @@ function ScalesInstanced({ scaleSize }) {
          void main() {`
       );
 
-      // Layer: per-scale gradient × cracked texture crop
-      // Gradient: light at top (vLocalUv.y=1) → darker at bottom (vLocalUv.y=0)
-      // Central ridge: lighter in center (vLocalUv.x≈0.5) → darker at edges
+      // Layer: per-scale red gradient × cracked texture crop
+      // Gradient: #8e3232 at tip (vLocalUv.y=0) → #4a1a1a at base/hinge (vLocalUv.y=1)
+      // Central ridge: lighter in center → darker at edges
       shader.fragmentShader = shader.fragmentShader.replace(
         "#include <map_fragment>",
         `#ifdef USE_MAP
-           // Per-scale vertical gradient (top bright, bottom darker)
-           float vGrad = mix(0.6, 1.0, vLocalUv.y);
+           // Deep red gradient: bright tip → dark base
+           vec3 tipColor  = vec3(0.557, 0.196, 0.196); // #8e3232
+           vec3 baseColor = vec3(0.290, 0.102, 0.102); // #4a1a1a
+           vec3 scaleColor = mix(tipColor, baseColor, vLocalUv.y);
            // Central ridge highlight
-           float ridge = 1.0 - 0.2 * pow(abs(vLocalUv.x - 0.5) * 2.0, 1.5);
-           // Combined per-scale shading
-           float scaleShade = vGrad * ridge;
+           float ridge = 1.0 - 0.15 * pow(abs(vLocalUv.x - 0.5) * 2.0, 1.5);
+           scaleColor *= ridge;
            // Cracked texture crop
            vec4 crackedColor = texture2D(map, vCropUv);
-           // Layer: gradient underneath, cracked texture on top
-           diffuseColor.rgb *= scaleShade * crackedColor.rgb;
+           // Layer: red gradient underneath, cracked texture on top
+           diffuseColor.rgb = scaleColor * crackedColor.rgb;
          #endif`
       );
     };
@@ -143,7 +144,7 @@ function ScalesInstanced({ scaleSize }) {
   }, [crackedTex]);
 
   const strokeMat = useMemo(
-    () => new THREE.MeshBasicMaterial({ color: 0x606060, side: THREE.DoubleSide }),
+    () => new THREE.MeshBasicMaterial({ color: 0x2a0e0e, side: THREE.DoubleSide }),
     []
   );
 
