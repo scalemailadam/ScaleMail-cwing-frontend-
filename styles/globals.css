@@ -31,3 +31,22 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+/* ── Store: tech color tokens ───────────────────────────────────── */
+@theme {
+  --color-tech-black: hsl(0 0% 0%);
+  --color-tech-white: hsl(0 0% 100%);
+  --color-tech-gray-100: hsl(0 0% 96%);
+  --color-tech-gray-200: hsl(0 0% 89%);
+  --color-tech-gray-300: hsl(0 0% 80%);
+  --color-tech-gray-400: hsl(0 0% 63%);
+  --color-tech-gray-500: hsl(0 0% 50%);
+  --color-tech-gray-600: hsl(0 0% 40%);
+  --color-tech-gray-700: hsl(0 0% 25%);
+  --color-tech-gray-800: hsl(0 0% 15%);
+  --color-tech-gray-900: hsl(0 0% 9%);
+}
+
+@utility transition-instant {
+  transition: all 0.1s ease;
+}
