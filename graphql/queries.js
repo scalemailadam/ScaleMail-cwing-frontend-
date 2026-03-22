@@ -135,4 +135,60 @@ const GET_BROWSER_MODAL = gql`
     }
   }
 `;
-export { GET_HEADER, GET_DOCK, GET_FOLDER, GET_BROWSER_MODAL };
+const GET_PRODUCTS = gql`
+  query GetProducts {
+    products(sort: "createdAt:desc") {
+      documentId
+      code
+      name
+      price
+      description
+      season
+      category
+      sizes
+      images {
+        url
+      }
+      colors {
+        name
+        hex
+        image {
+          url
+        }
+        images {
+          url
+        }
+      }
+    }
+  }
+`;
+
+const GET_PRODUCT = gql`
+  query GetProduct($documentId: ID!) {
+    product(documentId: $documentId) {
+      documentId
+      code
+      name
+      price
+      description
+      season
+      category
+      sizes
+      images {
+        url
+      }
+      colors {
+        name
+        hex
+        image {
+          url
+        }
+        images {
+          url
+        }
+      }
+    }
+  }
+`;
+
+export { GET_HEADER, GET_DOCK, GET_FOLDER, GET_BROWSER_MODAL, GET_PRODUCTS, GET_PRODUCT };

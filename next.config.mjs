@@ -4,10 +4,19 @@ const nextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: "http", // ↔ 'https' in prod
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+      },
+      {
+        protocol: "http",
         hostname: "192.168.0.231",
         port: "1337",
-        pathname: "/uploads/**", // allow any file under /uploads/
+        pathname: "/uploads/**",
+      },
+      {
+        protocol: "https",
+        hostname: "*.render.com",
+        pathname: "/uploads/**",
       },
     ],
   },
