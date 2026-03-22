@@ -166,6 +166,7 @@ export default function Desktop({
         <img
           src={toUrl(imgUrl)}
           alt={folder.title}
+          draggable="false"
           className={`${cls} object-contain`}
         />
       );
