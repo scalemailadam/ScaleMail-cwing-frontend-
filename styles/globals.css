@@ -32,6 +32,18 @@ body {
   color: var(--foreground);
 }
 
+/* All interactive elements get pointer cursor */
+button,
+[role="button"],
+a,
+label[for],
+input[type="checkbox"],
+input[type="radio"],
+select,
+summary {
+  cursor: pointer;
+}
+
 /* ── Store: tech color tokens ───────────────────────────────────── */
 @theme {
   --color-tech-black: hsl(0 0% 0%);
