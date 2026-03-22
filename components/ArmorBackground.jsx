@@ -8,8 +8,11 @@ export default function ArmorBackground() {
   return (
     <div className="fixed inset-0 -z-10 pointer-events-none">
       <Canvas camera={{ position: [0, 0, 20], fov: 50 }} dpr={[1, 1.5]}>
-        <ambientLight intensity={0.9} />
-        <directionalLight position={[0, 5, 10]} intensity={0.5} />
+        {/* Diffused top-left light source */}
+        <ambientLight intensity={0.55} />
+        <directionalLight position={[-8, 6, 10]} intensity={0.7} />
+        {/* Subtle fill from bottom-right to avoid pure black */}
+        <directionalLight position={[6, -4, 5]} intensity={0.15} />
         <ScalesInstanced scaleSize={2} />
       </Canvas>
     </div>
@@ -17,9 +20,6 @@ export default function ArmorBackground() {
 }
 
 // ── Grey scale texture with central ridge shading ──────────────────
-// Mimics the reference image: lighter ridge down the centre, darker
-// falloff toward the left/right edges, with a subtle vertical gradient
-// (lighter at the broad top, darker toward the pointed bottom).
 function makeScaleTexture() {
   const w = 128;
   const h = 256;
@@ -36,7 +36,7 @@ function makeScaleTexture() {
   ctx.fillStyle = vGrad;
   ctx.fillRect(0, 0, w, h);
 
-  // Central ridge highlight (horizontal gradient, additive-ish via overlay)
+  // Central ridge highlight
   ctx.globalCompositeOperation = "lighter";
   const rGrad = ctx.createLinearGradient(0, 0, w, 0);
   rGrad.addColorStop(0, "rgba(0,0,0,0)");
@@ -66,21 +66,14 @@ function makeScaleTexture() {
 }
 
 // ── Armor scale shape ──────────────────────────────────────────────
-// Broad rounded top, tapers to a point at the bottom.
-// Origin at the TOP CENTER (broad edge) — this is the hinge point.
-// The scale hangs downward from its wide top.
+// Broad rounded top (hinge), tapers to a point at the bottom.
 function makeScaleShape(w, h) {
   const shape = new THREE.Shape();
   const hw = w / 2;
 
-  // Start at the top-center (hinge point, broad edge)
   shape.moveTo(0, 0);
-
-  // Right side: fan out to full width, then taper down to pointed bottom
   shape.bezierCurveTo(hw * 0.5, 0, hw, -h * 0.05, hw, -h * 0.2);
   shape.bezierCurveTo(hw, -h * 0.5, hw * 0.3, -h * 0.85, 0, -h);
-
-  // Left side: mirror back up from pointed bottom to top-center
   shape.bezierCurveTo(-hw * 0.3, -h * 0.85, -hw, -h * 0.5, -hw, -h * 0.2);
   shape.bezierCurveTo(-hw, -h * 0.05, -hw * 0.5, 0, 0, 0);
 
@@ -93,24 +86,21 @@ function ScalesInstanced({ scaleSize }) {
   const { viewport } = useThree();
 
   const w = scaleSize;
-  const h = scaleSize * 1.4; // taller than wide, like the reference
+  const h = scaleSize * 1.4;
   const cols = Math.ceil(viewport.width / w) + 4;
   const rows = Math.ceil(viewport.height / (h * 0.45)) + 4;
   const count = rows * cols;
 
-  // Face geometry — origin at the top tip (hinge point)
   const faceGeo = useMemo(
     () => new THREE.ShapeGeometry(makeScaleShape(w, h), 12),
     [w, h]
   );
 
-  // Stroke geometry — slightly larger
   const strokeGeo = useMemo(
     () => new THREE.ShapeGeometry(makeScaleShape(w * 1.05, h * 1.03), 12),
     [w, h]
   );
 
-  // Materials
   const scaleTexture = useMemo(() => makeScaleTexture(), []);
   const faceMat = useMemo(
     () =>
@@ -127,13 +117,12 @@ function ScalesInstanced({ scaleSize }) {
     []
   );
 
-  // Grid positions — each scale's HINGE POINT (top tip).
-  // Even rows offset by half a column for brick-like tiling.
-  // Rows ordered top-to-bottom so lower rows render on top (natural overlap).
-  const { basePositions, rowIndices } = useMemo(() => {
+  // Grid positions + per-scale random seeds for the shiver
+  const { basePositions, rowIndices, shiverSeeds } = useMemo(() => {
     const positions = [];
     const ri = [];
-    const rowSpacing = h * 0.45; // overlap amount
+    const seeds = [];
+    const rowSpacing = h * 0.45;
     const colSpacing = w;
     for (let row = 0; row < rows; row++) {
       const xOff = row % 2 === 0 ? 0 : colSpacing / 2;
@@ -142,69 +131,45 @@ function ScalesInstanced({ scaleSize }) {
         const y = ((rows - 1) / 2 - row) * rowSpacing;
         positions.push(x, y, 0);
         ri.push(row);
+        // Each scale gets unique timing offsets for organic shiver
+        seeds.push({
+          phase: Math.random() * Math.PI * 2,
+          freq: 0.8 + Math.random() * 0.8,   // how fast it shivers
+          amp: 0.008 + Math.random() * 0.012, // how far it swings (very subtle)
+        });
       }
     }
-    return { basePositions: positions, rowIndices: ri };
+    return { basePositions: positions, rowIndices: ri, shiverSeeds: seeds };
   }, [rows, cols, w, h]);
-
-  // Ripple state — wide horizontal waves that sweep vertically
-  const rippleState = useRef({
-    active: [],
-    nextRippleTime: 2 + Math.random() * 3,
-  });
 
   const dummy = useMemo(() => new THREE.Object3D(), []);
 
   useFrame(({ clock }) => {
     if (!faceRef.current) return;
     const t = clock.getElapsedTime();
-    const rs = rippleState.current;
-
-    // Spawn a new horizontal wave occasionally
-    if (t > rs.nextRippleTime) {
-      rs.active.push({
-        originY: (Math.random() - 0.5) * viewport.height,
-        direction: Math.random() > 0.5 ? 1 : -1, // sweep up or down
-        startTime: t,
-        speed: 4 + Math.random() * 3,
-        strength: 0.12 + Math.random() * 0.12,
-      });
-      rs.nextRippleTime = t + 3 + Math.random() * 5;
-      if (rs.active.length > 3) rs.active.shift();
-    }
 
     for (let i = 0; i < count; i++) {
       const bx = basePositions[i * 3];
       const by = basePositions[i * 3 + 1];
       const row = rowIndices[i];
+      const seed = shiverSeeds[i];
 
-      // Sum rotation from all active ripples
-      let rotX = 0;
-      for (const rip of rs.active) {
-        const elapsed = t - rip.startTime;
-        // Wave front sweeps vertically (wide horizontal line)
-        const waveFrontY = rip.originY + elapsed * rip.speed * rip.direction;
-        const delta = (by - waveFrontY) * rip.direction;
+      // Subtle shiver: rotate around Y axis (left-right swing),
+      // hinged at the broad top. Each scale has its own rhythm.
+      // Layered sine waves at different frequencies for irregularity.
+      const rotY =
+        Math.sin(t * seed.freq + seed.phase) * seed.amp +
+        Math.sin(t * seed.freq * 1.7 + seed.phase * 0.6) * seed.amp * 0.5 +
+        Math.sin(t * seed.freq * 0.3 + seed.phase * 1.4) * seed.amp * 0.3;
 
-        // Tight envelope — wave is a narrow band sweeping through
-        const envelope = Math.exp(-(delta * delta) / 2);
-        // Fade out as it travels further — peters out over time
-        const fade = Math.max(0, 1 - elapsed / 5);
-        // Strength also decays with distance traveled
-        const distanceFade = Math.max(0, 1 - elapsed * rip.speed / (viewport.height * 1.5));
-        rotX += Math.sin(delta * 3) * rip.strength * envelope * fade * distanceFade;
-      }
-
-      // z-layer: UPPER rows render in FRONT (pointed tips overlap the
-      // broad tops of the scales below them)
+      // Upper rows in front (pointed tips overlap broad tops below)
       const zLayer = (rows - row) * 0.02;
 
       dummy.position.set(bx, by, zLayer);
-      dummy.rotation.set(rotX, 0, 0);
+      dummy.rotation.set(0, rotY, 0);
       dummy.updateMatrix();
       faceRef.current.setMatrixAt(i, dummy.matrix);
 
-      // Stroke follows the same transform, slightly behind
       dummy.position.z = zLayer - 0.005;
       dummy.updateMatrix();
       strokeRef.current.setMatrixAt(i, dummy.matrix);
