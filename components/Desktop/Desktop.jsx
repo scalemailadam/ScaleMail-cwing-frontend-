@@ -58,6 +58,7 @@ export default function Desktop({
   // Refs to avoid stale closures in document event listeners
   const iconPosRef = useRef({});
   const foldersRef = useRef([]);
+  const dragStartRef = useRef({});
 
   useEffect(() => { iconPosRef.current = iconPositions; }, [iconPositions]);
 
@@ -198,10 +199,19 @@ export default function Desktop({
     });
   };
 
-  const handleIconStop = (documentId, data) => {
-    if (isTouchDevice && Math.abs(data.deltaX) < 5 && Math.abs(data.deltaY) < 5) {
-      const folder = foldersRef.current.find((f) => f.documentId === documentId);
-      if (folder) openFolderOrModal(folder);
+  const handleIconDragStart = (documentId) => {
+    dragStartRef.current[documentId] = iconPosRef.current[documentId] ?? { x: 0, y: 0 };
+  };
+
+  const handleIconStop = (documentId) => {
+    if (isTouchDevice) {
+      const start = dragStartRef.current[documentId];
+      const end = iconPosRef.current[documentId] ?? { x: 0, y: 0 };
+      const dist = Math.abs((end.x - (start?.x ?? end.x))) + Math.abs((end.y - (start?.y ?? end.y)));
+      if (dist < 10) {
+        const folder = foldersRef.current.find((f) => f.documentId === documentId);
+        if (folder) openFolderOrModal(folder);
+      }
     }
   };
 
@@ -310,8 +320,9 @@ export default function Desktop({
             bounds="parent"
             nodeRef={ref}
             position={pos}
+            onStart={() => handleIconDragStart(folder.documentId)}
             onDrag={(e, data) => handleIconDrag(folder.documentId, data)}
-            onStop={(e, data) => handleIconStop(folder.documentId, data)}
+            onStop={() => handleIconStop(folder.documentId)}
           >
             <div
               ref={ref}

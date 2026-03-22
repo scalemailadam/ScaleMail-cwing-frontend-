@@ -57,7 +57,7 @@ export default function ResumeModal({ folder, onClose, onMinimizeFolder }) {
       className={
         full
           ? "absolute inset-x-0 top-1 bottom-22 flex flex-col border border-gray-900 bg-gray-300 z-40"
-          : "w-[500px] h-[85vh] md:w-[40vw] rounded-lg shadow-2xl border border-gray-900 bg-gray-300 flex flex-col overflow-hidden"
+          : "w-[500px] h-[85vh] max-w-[calc(100vw-2rem)] max-h-[90vh] md:w-[40vw] rounded-lg shadow-2xl border border-gray-900 bg-gray-300 flex flex-col overflow-hidden"
       }
     >
       {/* title bar */}

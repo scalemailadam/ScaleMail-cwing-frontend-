@@ -196,7 +196,7 @@ export default function BrowserModal({ folder, onClose, onMinimizeFolder }) {
       className={
         full
           ? "absolute inset-0 flex flex-col overflow-hidden z-40"
-          : "rounded-lg shadow-lg w-[900px] h-[600px] flex flex-col overflow-hidden"
+          : "rounded-lg shadow-lg w-[900px] h-[600px] max-w-[calc(100vw-2rem)] max-h-[90vh] flex flex-col overflow-hidden"
       }
       style={{ backgroundColor: defaultBg, color: textColor }}
     >

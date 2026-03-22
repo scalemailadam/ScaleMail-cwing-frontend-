@@ -102,7 +102,7 @@ export default function GarmentDesignModal({
       className={
         full
           ? "absolute left-0 right-0 top-1 bottom-22 max-w-screen bg-black/50 border border-gray-900 flex flex-col overflow-hidden z-40"
-          : "bg-black/50 border border-gray-900 rounded-lg shadow-2xl w-[900px] h-[600px] md:w-[70vw] md:h-[75vh] flex flex-col overflow-hidden"
+          : "bg-black/50 border border-gray-900 rounded-lg shadow-2xl w-[900px] h-[600px] max-w-[calc(100vw-2rem)] max-h-[90vh] md:w-[70vw] md:h-[75vh] flex flex-col overflow-hidden"
       }
     >
       {/* ── title bar ─────────────────────────────── */}
