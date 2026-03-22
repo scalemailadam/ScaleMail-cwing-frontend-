@@ -1,7 +1,12 @@
 import React, { useState } from "react";
+import dynamic from "next/dynamic";
 import Header from "../components/Navigation/Header";
 import Dock from "../components/Dock/Dock";
 import Desktop from "../components/Desktop/Desktop";
+
+const ArmorBackground = dynamic(() => import("../components/ArmorBackground"), {
+  ssr: false,
+});
 
 export default function Home() {
   const [openFolder, setOpenFolder] = useState(null); // the active window
@@ -37,6 +42,7 @@ export default function Home() {
 
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden">
+      <ArmorBackground />
       <Header onMenuItemClick={(slug) => setNavModalSlug(slug)} />
 
       <Desktop

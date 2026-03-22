@@ -38,9 +38,9 @@ function AdaptiveScales({ speed, amplitude, scaleSize }) {
 function ScalesGrid({ rows, cols, scaleSize, speed, amplitude }) {
   // load textures: color, normal, height
   const [colorMap, normalMap, heightMap] = useTexture([
-    "/textures/T_Armor4_Color.PNG",
-    "/textures/T_Armor4_Normal.PNG",
-    "/textures/T_Armor4_Height.PNG",
+    "/textures/T_Armor4_Color.png",
+    "/textures/T_Armor4_Normal.png",
+    "/textures/T_Armor4_Height.png",
   ]);
 
   [colorMap, normalMap, heightMap].forEach((tex) => {
