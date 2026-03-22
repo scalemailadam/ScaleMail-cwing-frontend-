@@ -39,6 +39,7 @@ export default function Desktop({
   const { data, loading, error } = useQuery(GET_FOLDER);
   const iconRefs = useRef([]);
   const modalRef = useRef(null);
+  const desktopRef = useRef(null);
   const [finderViewFolder, setFinderViewFolder] = useState(null);
 
   const [isTouchDevice, setIsTouchDevice] = useState(false);
@@ -46,8 +47,19 @@ export default function Desktop({
   const [openImageFolder, setOpenImageFolder] = useState(null);
   const [openPicture, setOpenPicture] = useState(null);
   const [selectedFolderId, setSelectedFolderId] = useState(null);
-  const [backStack, setBackStack] = useState([]); // previous views
+  const [backStack, setBackStack] = useState([]);
   const [forwardStack, setForwardStack] = useState([]);
+
+  // Multi-select state
+  const [iconPositions, setIconPositions] = useState({});
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [selBox, setSelBox] = useState(null);
+
+  // Refs to avoid stale closures in document event listeners
+  const iconPosRef = useRef({});
+  const foldersRef = useRef([]);
+
+  useEffect(() => { iconPosRef.current = iconPositions; }, [iconPositions]);
 
   useEffect(() => {
     setIsTouchDevice(
@@ -55,6 +67,20 @@ export default function Desktop({
         ("ontouchstart" in window || navigator.maxTouchPoints > 0)
     );
   }, []);
+
+  // Initialize icon positions once data loads
+  useEffect(() => {
+    if (!data?.folderCategories) return;
+    const dc = data.folderCategories.find((c) => c.name === "Desktop");
+    const folders = dc?.desktop_folders || [];
+    setIconPositions((prev) => {
+      const next = { ...prev };
+      folders.forEach((f, i) => {
+        if (!next[f.documentId]) next[f.documentId] = { x: 40, y: 20 + i * 100 };
+      });
+      return next;
+    });
+  }, [data]);
 
   useEffect(() => {
     if (openFolder && openFolder.modalSlug !== "openFolder") {
@@ -64,13 +90,11 @@ export default function Desktop({
       setCustomModal(null);
     }
   }, [openFolder]);
+
   useEffect(() => {
     if (openFolder?.modalSlug === "openFolder") {
-      // 1) go back to top-level Finder
       setFinderViewFolder(null);
-      // 2) clear any highlighted category
       setSelectedFolderId(null);
-      // 3) clear history
       setBackStack([]);
       setForwardStack([]);
     }
@@ -89,13 +113,12 @@ export default function Desktop({
   const categories = data.folderCategories || [];
   const desktopCategory = categories.find((c) => c.name === "Desktop");
   const desktopFolders = desktopCategory?.desktop_folders || [];
+  foldersRef.current = desktopFolders;
   const finderFolder = desktopFolders.find((f) => f.modalSlug === "openFolder");
-  // generate refs for each desktop icon
   iconRefs.current = desktopFolders.map(
     (_, i) => iconRefs.current[i] ?? React.createRef()
   );
   const finderItems = desktopFolders.flatMap((folder) => folder.items);
-  // categories for the Finder sidebar (exclude Desktop)
   const finderCategories = categories
     .filter((c) => c.name !== "Desktop")
     .map((c) => ({ name: c.name, folders: c.desktop_folders }));
@@ -110,7 +133,6 @@ export default function Desktop({
     }
     onOpenFolder(folder);
     if (folder.modalSlug === "openFolder") {
-      // • you’ve clicked the Finder icon → show root
       setFinderViewFolder(null);
       setSelectedFolderId(null);
       setBackStack([]);
@@ -130,20 +152,18 @@ export default function Desktop({
   };
 
   const handleSidebarClick = (folder) => {
-    // 1) make sure Finder is open
     const finder = desktopFolders.find((f) => f.modalSlug === "openFolder");
     if (finder && openFolder?.modalSlug !== "openFolder") {
       onOpenFolder(finder);
     }
-    // 2) highlight this category
     setSelectedFolderId(folder.documentId);
-    // 3) set the Finder view to this folder’s own items
     setFinderViewFolder(folder);
-    // clear any back/forward stacks
     setBackStack([]);
     setForwardStack([]);
   };
+
   const finderSubItems = desktopFolders.flatMap((folder) => folder.items);
+
   const goBack = () => {
     if (backStack.length === 0) return;
     const prev = backStack[backStack.length - 1];
@@ -159,6 +179,84 @@ export default function Desktop({
     setBackStack([...backStack, finderViewFolder]);
     setFinderViewFolder(next);
   };
+
+  // ── Icon drag handlers ──────────────────────────────────────────────────────
+
+  const handleIconDrag = (documentId, data) => {
+    const { deltaX, deltaY } = data;
+    setIconPositions((prev) => {
+      const next = { ...prev };
+      const ids =
+        selectedIds.has(documentId) && selectedIds.size > 1
+          ? [...selectedIds]
+          : [documentId];
+      ids.forEach((id) => {
+        const cur = prev[id] ?? { x: 0, y: 0 };
+        next[id] = { x: cur.x + deltaX, y: cur.y + deltaY };
+      });
+      return next;
+    });
+  };
+
+  const handleIconStop = (documentId, data) => {
+    if (isTouchDevice && Math.abs(data.deltaX) < 5 && Math.abs(data.deltaY) < 5) {
+      const folder = foldersRef.current.find((f) => f.documentId === documentId);
+      if (folder) openFolderOrModal(folder);
+    }
+  };
+
+  // ── Rubber-band selection ───────────────────────────────────────────────────
+
+  const handleDesktopMouseDown = (e) => {
+    // Only fire when clicking the bare desktop (not an icon or modal)
+    if (e.target !== desktopRef.current) return;
+    e.preventDefault();
+
+    const rect = desktopRef.current.getBoundingClientRect();
+    const startX = e.clientX - rect.left;
+    const startY = e.clientY - rect.top;
+
+    setSelBox({ x: startX, y: startY, w: 0, h: 0 });
+    setSelectedIds(new Set());
+
+    const onMove = (e) => {
+      const cx = e.clientX - rect.left;
+      const cy = e.clientY - rect.top;
+      const x = Math.min(startX, cx);
+      const y = Math.min(startY, cy);
+      const w = Math.abs(cx - startX);
+      const h = Math.abs(cy - startY);
+      setSelBox({ x, y, w, h });
+
+      // Check which icons intersect the selection box
+      const hit = new Set();
+      foldersRef.current.forEach((f) => {
+        const pos = iconPosRef.current[f.documentId];
+        if (!pos) return;
+        if (
+          pos.x < x + w &&
+          pos.x + 64 > x &&
+          pos.y < y + h &&
+          pos.y + 80 > y
+        ) {
+          hit.add(f.documentId);
+        }
+      });
+      setSelectedIds(hit);
+    };
+
+    const onUp = () => {
+      setSelBox(null);
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  };
+
+  // ── Icon rendering ──────────────────────────────────────────────────────────
+
   const renderFolderIcon = (folder, cls = "w-16 h-16 object-cover") => {
     const imgUrl = folder.icon?.[0]?.url;
     if (imgUrl) {
@@ -196,33 +294,43 @@ export default function Desktop({
 
   return (
     <div
-      className="
-    relative
-    flex-1
-  "
+      ref={desktopRef}
+      className="relative flex-1"
+      onMouseDown={handleDesktopMouseDown}
     >
       {/* Desktop icons */}
       {desktopFolders.map((folder, i) => {
         const ref = iconRefs.current[i];
+        const pos = iconPositions[folder.documentId] ?? { x: 40, y: 20 + i * 100 };
+        const isSelected = selectedIds.has(folder.documentId);
+
         return (
           <Draggable
             key={folder.documentId}
             bounds="parent"
             nodeRef={ref}
-            onStop={(e, d) => {
-              if (
-                isTouchDevice &&
-                Math.abs(d.deltaX) < 5 &&
-                Math.abs(d.deltaY) < 5
-              ) {
-                openFolderOrModal(folder);
-              }
-            }}
+            position={pos}
+            onDrag={(e, data) => handleIconDrag(folder.documentId, data)}
+            onStop={(e, data) => handleIconStop(folder.documentId, data)}
           >
             <div
               ref={ref}
               className="absolute cursor-pointer select-none"
-              style={{ left: 40, top: 20 + i * 100 }}
+              style={isSelected ? { outline: "2px solid rgba(100,149,237,0.8)", outlineOffset: "3px" } : {}}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                if (!e.ctrlKey && !e.metaKey) {
+                  setSelectedIds(new Set([folder.documentId]));
+                } else {
+                  setSelectedIds((prev) => {
+                    const next = new Set(prev);
+                    next.has(folder.documentId)
+                      ? next.delete(folder.documentId)
+                      : next.add(folder.documentId);
+                    return next;
+                  });
+                }
+              }}
               onDoubleClick={() => !isTouchDevice && openFolderOrModal(folder)}
             >
               <div className="w-16 flex flex-col items-center">
@@ -236,7 +344,15 @@ export default function Desktop({
         );
       })}
 
-      {/* ——— Finder (first‑level modal) ——— */}
+      {/* Rubber-band selection box */}
+      {selBox && selBox.w > 3 && selBox.h > 3 && (
+        <div
+          className="absolute pointer-events-none z-10 border border-blue-400 bg-blue-400/20"
+          style={{ left: selBox.x, top: selBox.y, width: selBox.w, height: selBox.h }}
+        />
+      )}
+
+      {/* ——— Finder (first‑level modal) ——— */}
       {openFolder?.modalSlug === "openFolder" && (
         <div
           className="absolute inset-0 bg-black/50 flex items-center justify-center z-30"
@@ -287,35 +403,28 @@ export default function Desktop({
 
                 <span className="ml-2 font-medium text-white">
                   {openFolder?.modalSlug === "openFolder"
-                    ? // We’re in Finder:
-                      finderViewFolder
-                      ? // 1) Drilled-in view → show that folder’s title
-                        finderViewFolder.title
-                      : // 2) Root Finder → always show “Finder” literally
-                        "Finder"
-                    : // Not in Finder mode at all → show whatever modal you opened (Resume, Browser…)
-                      openFolder.title}
+                    ? finderViewFolder
+                      ? finderViewFolder.title
+                      : "Finder"
+                    : openFolder.title}
                 </span>
               </div>
 
               <div className="flex flex-1">
                 {/* sidebar */}
                 <aside className="w-1/4 bg-[#201e25] border-r border-black overflow-y-auto">
-                  {/* ← new “All” entry */}
                   <div className="px-4 py-1 text-xs font-semibold uppercase text-gray-500">
                     Finder
                   </div>
                   <div
                     onClick={() => {
                       onOpenFolder(finderFolder);
-                      // reset to root Finder view
                       setFinderViewFolder(null);
                       setSelectedFolderId(null);
                       setBackStack([]);
                       setForwardStack([]);
                     }}
                     className={`flex items-center px-4 py-2 cursor-pointer ${
-                      // “active” when no sub-folder is selected
                       selectedFolderId === null
                         ? "bg-[#464746]"
                         : "hover:bg-[#464746] bg-[#201e25]"
@@ -354,20 +463,17 @@ export default function Desktop({
                   <div className="grid grid-cols-4 gap-4">
                     {(openFolder?.modalSlug === "openFolder"
                       ? finderViewFolder
-                        ? // if this is a desktop-folder, show its .items, else (true leaf) show its .subItem
-                          finderViewFolder.items ??
+                        ? finderViewFolder.items ??
                           finderViewFolder.subItem ??
                           []
                         : finderItems
                       : openFolder.items || []
                     ).map((item) => {
-                      // determine title & thumbnail
                       const title = item.title ?? item.text;
                       const thumbUrl =
                         item.icon?.[0]?.url ?? item.image?.[0]?.url;
 
                       if (item.url) {
-                        // External link: wrap in <a>
                         return (
                           <a
                             key={item.id || item.documentId}
@@ -391,28 +497,24 @@ export default function Desktop({
                         );
                       }
 
-                      // All other items: your existing onClick logic
                       return (
                         <div
                           key={item.id || item.documentId}
                           className="flex flex-col items-center p-2 hover:bg-[#464746] rounded cursor-pointer"
                           onClick={() => {
                             if (openFolder?.modalSlug === "openFolder") {
-                              // 1) first click → drill into that folder.item
                               if (!finderViewFolder) {
                                 setBackStack([...backStack, finderViewFolder]);
                                 setFinderViewFolder(item);
                                 setForwardStack([]);
                                 return;
                               }
-                              // 2) second click on a subItem → open its image
                               const fullUrl =
                                 item.contentItems?.image?.[0]?.url;
                               if (fullUrl) {
                                 setOpenPicture({ url: toUrl(fullUrl), title });
                               }
                             } else {
-                              // non-Finder modal (Applications, Resume, etc.)
                               if (item.modalSlug === "imageFolderModal") {
                                 setOpenImageFolder(item);
                               } else if (item.modalSlug === "pictureModal") {
@@ -448,6 +550,7 @@ export default function Desktop({
           </Draggable>
         </div>
       )}
+
       {customModal &&
         (() => {
           const Modal = MODAL_COMPONENTS[customModal.modalSlug];
@@ -456,12 +559,11 @@ export default function Desktop({
               folder={customModal}
               onClose={() => {
                 setCustomModal(null);
-                onCloseFolder(); /* remove white dot on close */
+                onCloseFolder();
               }}
               onMinimizeFolder={() => minimizeCustomModal(customModal)}
             />
           ) : (
-            /* fallback */
             <div
               className="fixed inset-0 bg-black/60 flex items-center justify-center"
               onClick={() => setCustomModal(null)}
@@ -479,7 +581,7 @@ export default function Desktop({
           );
         })()}
 
-      {/* ——— Image‑folder (second‑level Finder) ——— */}
+      {/* ——— Image‑folder (second‑level Finder) ——— */}
       {openImageFolder && (
         <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-40"
@@ -489,7 +591,6 @@ export default function Desktop({
             onClick={(e) => e.stopPropagation()}
             className="bg-[#201e25] border border-gray-900 rounded-lg shadow-2xl w-2/3 h-2/3 flex flex-col overflow-hidden"
           >
-            {/* title bar */}
             <div className="flex items-center space-x-2 h-8 px-3 bg-[#363539] border-b border-black">
               <button
                 onClick={() => setOpenImageFolder(null)}
@@ -537,13 +638,12 @@ export default function Desktop({
         </div>
       )}
 
-      {/* ——— full‑screen picture viewer ——— */}
+      {/* ——— full‑screen picture viewer ——— */}
       {openPicture && (
         <div
           className="absolute left-0 right-0 top-1 bottom-22 max-w-screen bg-[#201e25] border border-gray-900 flex flex-col overflow-hidden z-50"
           onClick={() => setOpenPicture(null)}
         >
-          {/* title bar */}
           <div
             onClick={(e) => e.stopPropagation()}
             className="flex items-center space-x-2 h-8 px-3 bg-[#363539] border-b border-black"
@@ -557,7 +657,6 @@ export default function Desktop({
             </span>
           </div>
 
-          {/* image */}
           <div
             onClick={(e) => e.stopPropagation()}
             className="flex-1 flex items-center justify-center overflow-auto"
