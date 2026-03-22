@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
-import { PayPalButtons } from "@paypal/react-paypal-js";
+import { PayPalButtons, usePayPalScriptReducer } from "@paypal/react-paypal-js";
 import StoreHeader from "@/components/store/StoreHeader";
 import StoreFooter from "@/components/store/StoreFooter";
 import { useCart } from "@/context/CartContext";
@@ -27,6 +27,7 @@ export default function CheckoutPage() {
     name: "", email: "", address: "", city: "", zip: "", country: "",
   });
 
+  const [{ isPending, isRejected }] = usePayPalScriptReducer();
   const formComplete = Object.values(info).every((v) => v.trim() !== "");
   const total = totalPrice + SHIPPING;
 
@@ -133,6 +134,16 @@ export default function CheckoutPage() {
 
             {error && (
               <p className="font-mono text-xs tracking-widest text-red-600 mb-4">{error}</p>
+            )}
+
+            {isPending && (
+              <p className="font-mono text-xs tracking-widest text-tech-gray-800 mb-4">LOADING PAYPAL...</p>
+            )}
+
+            {isRejected && (
+              <p className="font-mono text-xs tracking-widest text-red-600 mb-4">
+                PayPal failed to load. Check that NEXT_PUBLIC_PAYPAL_CLIENT_ID is set in your environment.
+              </p>
             )}
 
             <div className={!formComplete ? "opacity-40 pointer-events-none" : ""}>
