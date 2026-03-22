@@ -63,7 +63,7 @@ function ScalesInstanced({ scaleSize }) {
   );
 
   // Per-instance UV offsets — each scale crops a different part of the texture
-  const cropScale = 0.2; // each scale shows 20% of the texture
+  const cropScale = 0.08; // each scale shows ~8% of the texture (zoomed in)
   const uvOffsets = useMemo(() => {
     const offsets = new Float32Array(count * 2);
     for (let i = 0; i < count; i++) {
@@ -84,6 +84,7 @@ function ScalesInstanced({ scaleSize }) {
   const faceMat = useMemo(() => {
     const mat = new THREE.MeshStandardMaterial({
       map: crackedTex,
+      color: new THREE.Color(0.75, 0.75, 0.75), // base grey — lighting creates the gradient
       metalness: 0.3,
       roughness: 0.7,
       side: THREE.DoubleSide,
