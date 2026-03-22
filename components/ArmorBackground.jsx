@@ -2,24 +2,50 @@
 
 import React, { useRef, useMemo } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useTexture } from "@react-three/drei";
 import * as THREE from "three";
 
 export default function ArmorBackground() {
   return (
     <div className="fixed inset-0 -z-10 pointer-events-none">
       <Canvas camera={{ position: [0, 0, 20], fov: 50 }} dpr={[1, 1.5]}>
-        <ambientLight intensity={0.6} />
-        <directionalLight position={[10, 10, 10]} intensity={1} />
+        <ambientLight intensity={0.8} />
+        <directionalLight position={[5, 10, 10]} intensity={0.6} />
         <ScalesInstanced speed={0.8} amplitude={0.25} scaleSize={2} />
       </Canvas>
     </div>
   );
 }
 
+// Per-scale vertical gradient: light grey top → mid grey bottom
+function makeGradientTexture() {
+  const size = 128;
+  const canvas = document.createElement("canvas");
+  canvas.width = 1;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  const grad = ctx.createLinearGradient(0, 0, 0, size);
+  grad.addColorStop(0, "#d4d4d4");
+  grad.addColorStop(1, "#8a8a8a");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 1, size);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function makeScallopShape(w, h) {
+  const shape = new THREE.Shape();
+  shape.moveTo(-w / 2, h / 2);
+  shape.lineTo(w / 2, h / 2);
+  shape.lineTo(w / 2, 0);
+  shape.absarc(0, 0, w / 2, 0, Math.PI, true);
+  shape.closePath();
+  return shape;
+}
+
 function ScalesInstanced({ speed, amplitude, scaleSize }) {
-  const meshRef = useRef();
-  // viewport gives world-unit dimensions (not pixels)
+  const faceRef = useRef();
+  const strokeRef = useRef();
   const { viewport } = useThree();
 
   const w = scaleSize;
@@ -28,36 +54,36 @@ function ScalesInstanced({ speed, amplitude, scaleSize }) {
   const rows = Math.ceil(viewport.height / (h * 0.5)) + 2;
   const count = rows * cols;
 
-  const [colorMap, normalMap] = useTexture([
-    "/textures/T_Armor4_Color.png",
-    "/textures/T_Armor4_Normal.png",
-  ]);
+  // Face geometry
+  const faceGeo = useMemo(
+    () => new THREE.ShapeGeometry(makeScallopShape(w, h), 8),
+    [w, h]
+  );
 
-  [colorMap, normalMap].forEach((tex) => {
-    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  });
+  // Stroke geometry — slightly larger shape, rendered behind
+  const strokeScale = 1.04;
+  const strokeGeo = useMemo(
+    () => new THREE.ShapeGeometry(makeScallopShape(w * strokeScale, h * strokeScale), 8),
+    [w, h]
+  );
 
-  // Simple flat plane instead of heavy ExtrudeGeometry
-  const geometry = useMemo(() => {
-    const shape = new THREE.Shape();
-    shape.moveTo(-w / 2, h / 2);
-    shape.lineTo(w / 2, h / 2);
-    shape.lineTo(w / 2, 0);
-    shape.absarc(0, 0, w / 2, 0, Math.PI, true);
-    shape.closePath();
-    return new THREE.ShapeGeometry(shape, 4);
-  }, [w, h]);
-
-  // Lighter material — no displacement map, just color + normal
-  const material = useMemo(
+  // Gradient material for faces
+  const gradientMap = useMemo(() => makeGradientTexture(), []);
+  const faceMat = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
-        map: colorMap,
-        normalMap: normalMap,
-        metalness: 0.5,
-        roughness: 0.6,
+        map: gradientMap,
+        metalness: 0.3,
+        roughness: 0.7,
       }),
-    [colorMap, normalMap]
+    [gradientMap]
+  );
+
+  // Dark flat material for stroke outlines
+  const strokeMat = useMemo(
+    () =>
+      new THREE.MeshBasicMaterial({ color: 0x555555 }),
+    []
   );
 
   // Precompute base positions + random phases
@@ -77,42 +103,48 @@ function ScalesInstanced({ speed, amplitude, scaleSize }) {
     return { basePositions: positions, phases: ph };
   }, [rows, cols, w, h]);
 
-  // Set initial instance transforms
   const dummy = useMemo(() => new THREE.Object3D(), []);
+  const dummyStroke = useMemo(() => new THREE.Object3D(), []);
 
-  // Update instance matrices on mount and when grid changes
-  useMemo(() => {
-    if (!meshRef.current) return;
-    for (let i = 0; i < count; i++) {
-      dummy.position.set(basePositions[i * 3], basePositions[i * 3 + 1], 0);
-      dummy.rotation.set(0, 0, 0); // flat — no rotation
-      dummy.updateMatrix();
-      meshRef.current.setMatrixAt(i, dummy.matrix);
-    }
-    meshRef.current.instanceMatrix.needsUpdate = true;
-  }, [count, basePositions, dummy]);
-
-  // Animate Z position per instance — single draw call
+  // Animate Y + Z per instance — X stays locked
   useFrame(({ clock }) => {
-    if (!meshRef.current) return;
+    if (!faceRef.current) return;
     const t = clock.getElapsedTime() * speed;
     for (let i = 0; i < count; i++) {
-      dummy.position.set(
-        basePositions[i * 3],
-        basePositions[i * 3 + 1],
-        Math.sin(t + phases[i]) * amplitude
-      );
+      const baseX = basePositions[i * 3];
+      const baseY = basePositions[i * 3 + 1];
+      const phase = phases[i];
+      const yOffset = Math.sin(t + phase) * amplitude * 0.5;
+      const zOffset = Math.sin(t + phase) * amplitude;
+
+      // Face (slightly in front)
+      dummy.position.set(baseX, baseY + yOffset, zOffset);
       dummy.updateMatrix();
-      meshRef.current.setMatrixAt(i, dummy.matrix);
+      faceRef.current.setMatrixAt(i, dummy.matrix);
+
+      // Stroke (slightly behind)
+      dummyStroke.position.set(baseX, baseY + yOffset, zOffset - 0.01);
+      dummyStroke.updateMatrix();
+      strokeRef.current.setMatrixAt(i, dummyStroke.matrix);
     }
-    meshRef.current.instanceMatrix.needsUpdate = true;
+    faceRef.current.instanceMatrix.needsUpdate = true;
+    strokeRef.current.instanceMatrix.needsUpdate = true;
   });
 
   return (
-    <instancedMesh
-      ref={meshRef}
-      args={[geometry, material, count]}
-      frustumCulled={false}
-    />
+    <>
+      {/* Stroke layer — dark, slightly larger, slightly behind */}
+      <instancedMesh
+        ref={strokeRef}
+        args={[strokeGeo, strokeMat, count]}
+        frustumCulled={false}
+      />
+      {/* Face layer — gradient, in front */}
+      <instancedMesh
+        ref={faceRef}
+        args={[faceGeo, faceMat, count]}
+        frustumCulled={false}
+      />
+    </>
   );
 }
