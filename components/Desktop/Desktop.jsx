@@ -188,6 +188,27 @@ export default function Desktop({
     setFinderViewFolder(next);
   };
 
+  // Extracted grid item click handler (used by both onClick and onTouchEnd)
+  const handleGridItemClick = (item, thumbUrl, title) => {
+    const slug = normalizeSlug(item.modalSlug);
+    if (slug === "textmodal") { setOpenTextItem(item); return; }
+    if (slug === "imagefoldermodal") { setOpenImageFolder(item); return; }
+    if (slug === "picturemodal") { if (thumbUrl) setOpenPicture({ url: toUrl(thumbUrl), title }); return; }
+
+    if (normalizeSlug(openFolder?.modalSlug) === "openfolder") {
+      if (!finderViewFolder) {
+        setBackStack((prev) => [...prev, finderViewFolder]);
+        setFinderViewFolder(item);
+        setForwardStack([]);
+        return;
+      }
+      const fullUrl = item.contentItems?.image?.[0]?.url;
+      if (fullUrl) setOpenPicture({ url: toUrl(fullUrl), title });
+    } else {
+      if (item.url) window.open(item.url, "_blank");
+    }
+  };
+
   // ── Icon drag handlers ──────────────────────────────────────────────────────
 
   const handleIconDrag = (documentId, data) => {
@@ -376,29 +397,33 @@ export default function Desktop({
           className="absolute inset-0 bg-black/50 flex items-center justify-center z-30"
           onClick={onCloseFolder}
         >
-          <Draggable bounds="parent" nodeRef={modalRef} disabled={isFullscreen}>
+          <Draggable bounds="parent" nodeRef={modalRef} disabled={isFullscreen || isTouchDevice}>
             <div
               ref={modalRef}
               onClick={(e) => e.stopPropagation()}
               className={`bg-[#201e25] border border-gray-900 rounded-lg shadow-2xl ${
-                isFullscreen ? "w-full h-full" : "w-2/3 h-2/3"
+                isFullscreen ? "w-full h-full" : "w-full h-full md:w-2/3 md:h-2/3"
               } flex flex-col overflow-hidden`}
             >
               {/* title bar */}
               <div className="flex items-center space-x-2 h-8 px-3 bg-[#363539] border-b border-black">
                 <button
+                  onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onCloseFolder(); }}
                   onClick={onCloseFolder}
                   className="w-3 h-3 rounded-full bg-[#FF5F57] hover:opacity-80"
                 />
                 <button
+                  onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onMinimizeFolder(openFolder); }}
                   onClick={() => onMinimizeFolder(openFolder)}
                   className="w-3 h-3 rounded-full bg-[#FFBD2E] hover:opacity-80"
                 />
                 <button
+                  onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onToggleFullscreen(); }}
                   onClick={onToggleFullscreen}
                   className="w-3 h-3 rounded-full bg-[#28C93F] hover:opacity-80"
                 />
                 <button
+                  onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); if (backStack.length > 0) goBack(); }}
                   onClick={(e) => {
                     e.stopPropagation();
                     goBack();
@@ -409,6 +434,7 @@ export default function Desktop({
                   <FaIcons.FaChevronLeft className="text-white" />
                 </button>
                 <button
+                  onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); if (forwardStack.length > 0) goForward(); }}
                   onClick={(e) => {
                     e.stopPropagation();
                     goForward();
@@ -430,11 +456,19 @@ export default function Desktop({
 
               <div className="flex flex-1">
                 {/* sidebar */}
-                <aside className="w-1/4 bg-[#201e25] border-r border-black overflow-y-auto">
+                <aside className="w-1/3 md:w-1/4 bg-[#201e25] border-r border-black overflow-y-auto">
                   <div className="px-4 py-1 text-xs font-semibold uppercase text-gray-500">
                     Finder
                   </div>
                   <div
+                    onTouchEnd={(e) => {
+                      e.stopPropagation();
+                      onOpenFolder(finderFolder);
+                      setFinderViewFolder(null);
+                      setSelectedFolderId(null);
+                      setBackStack([]);
+                      setForwardStack([]);
+                    }}
                     onClick={() => {
                       onOpenFolder(finderFolder);
                       setFinderViewFolder(null);
@@ -461,6 +495,7 @@ export default function Desktop({
                         return (
                           <div
                             key={f.documentId}
+                            onTouchEnd={(e) => { e.stopPropagation(); handleSidebarClick(f); }}
                             onClick={() => handleSidebarClick(f)}
                             className={`flex items-center px-4 py-2 cursor-pointer ${
                               isActive
@@ -478,7 +513,7 @@ export default function Desktop({
                 </aside>
 
                 <main className="flex-1 p-4 overflow-y-auto">
-                  <div className="grid grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {(normalizeSlug(openFolder?.modalSlug) === "openfolder"
                       ? finderViewFolder
                         ? finderViewFolder.items ??
@@ -519,40 +554,8 @@ export default function Desktop({
                         <div
                           key={item.id || item.documentId}
                           className="flex flex-col items-center p-2 hover:bg-[#464746] rounded cursor-pointer"
-                          onClick={() => {
-                            // Handle modal slugs first, regardless of Finder context
-                            const slug = normalizeSlug(item.modalSlug);
-                            if (slug === "textmodal") {
-                              setOpenTextItem(item);
-                              return;
-                            }
-                            if (slug === "imagefoldermodal") {
-                              setOpenImageFolder(item);
-                              return;
-                            }
-                            if (slug === "picturemodal") {
-                              if (thumbUrl) setOpenPicture({ url: toUrl(thumbUrl), title });
-                              return;
-                            }
-
-                            if (normalizeSlug(openFolder?.modalSlug) === "openfolder") {
-                              if (!finderViewFolder) {
-                                // Navigate into sub-folder
-                                setBackStack([...backStack, finderViewFolder]);
-                                setFinderViewFolder(item);
-                                setForwardStack([]);
-                                return;
-                              }
-                              const fullUrl = item.contentItems?.image?.[0]?.url;
-                              if (fullUrl) {
-                                setOpenPicture({ url: toUrl(fullUrl), title });
-                              }
-                            } else {
-                              if (item.url) {
-                                window.open(item.url, "_blank");
-                              }
-                            }
-                          }}
+                          onTouchEnd={(e) => { e.stopPropagation(); handleGridItemClick(item, thumbUrl, title); }}
+                          onClick={() => handleGridItemClick(item, thumbUrl, title)}
                         >
                           {thumbUrl ? (
                             <img
