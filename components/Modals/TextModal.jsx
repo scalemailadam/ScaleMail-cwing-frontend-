@@ -68,9 +68,30 @@ export default function TextModal({ item, onClose, onMinimizeFolder }) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-6 text-sm text-gray-800 prose prose-sm max-w-none">
+      <div className="flex-1 overflow-auto p-6 text-sm text-gray-800">
         {content
-          ? <ReactMarkdown>{String(content)}</ReactMarkdown>
+          ? <ReactMarkdown
+              components={{
+                h1: ({children}) => <h1 className="text-2xl font-bold mb-3 mt-4">{children}</h1>,
+                h2: ({children}) => <h2 className="text-xl font-bold mb-2 mt-3">{children}</h2>,
+                h3: ({children}) => <h3 className="text-lg font-semibold mb-2 mt-3">{children}</h3>,
+                h4: ({children}) => <h4 className="text-base font-semibold mb-2 mt-2">{children}</h4>,
+                h5: ({children}) => <h5 className="text-sm font-semibold mb-1 mt-2">{children}</h5>,
+                h6: ({children}) => <h6 className="text-xs font-semibold mb-1 mt-2">{children}</h6>,
+                p:  ({children}) => <p className="mb-3 leading-relaxed">{children}</p>,
+                ul: ({children}) => <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>,
+                ol: ({children}) => <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>,
+                li: ({children}) => <li>{children}</li>,
+                blockquote: ({children}) => <blockquote className="border-l-4 border-gray-400 pl-3 italic mb-3 text-gray-500">{children}</blockquote>,
+                code: ({inline, children}) => inline
+                  ? <code className="bg-gray-100 px-1 rounded text-xs font-mono">{children}</code>
+                  : <pre className="bg-gray-100 rounded p-3 text-xs font-mono overflow-x-auto mb-3"><code>{children}</code></pre>,
+                a: ({href, children}) => <a href={href} target="_blank" rel="noreferrer" className="underline text-blue-600">{children}</a>,
+                strong: ({children}) => <strong className="font-bold">{children}</strong>,
+                em: ({children}) => <em className="italic">{children}</em>,
+                hr: () => <hr className="my-4 border-gray-300" />,
+              }}
+            >{String(content)}</ReactMarkdown>
           : <p className="text-gray-400 italic">No content yet.</p>
         }
       </div>

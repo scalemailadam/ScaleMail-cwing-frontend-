@@ -155,7 +155,7 @@ export default function BrowserModal({ folder, onClose, onMinimizeFolder }) {
             className={`mb-4 flex justify-${sec.placementRich}`}
           >
             <div
-              className="prose prose-sm max-w-none w-full"
+              className="max-w-none w-full"
               style={{ backgroundColor: sec.backgroundColor }}
             >
               {Array.isArray(sec.paragraphText)
