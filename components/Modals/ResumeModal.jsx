@@ -111,14 +111,19 @@ export default function ResumeModal({ folder, onClose, onMinimizeFolder }) {
         </span>
       </div>
 
-      {/* résumé image */}
+      {/* résumé image or PDF */}
       <div className="flex-1 overflow-auto relative">
         {!images.length ? (
           <div className="h-full flex items-center justify-center">
             <p className="text-gray-700 italic">No résumé image found.</p>
           </div>
+        ) : images[idx]?.toLowerCase().endsWith(".pdf") ? (
+          <iframe
+            src={images[idx].replace("/upload/", "/upload/fl_inline/")}
+            className="w-full h-full border-0"
+            title="Resume PDF"
+          />
         ) : (
-          /* ↓ slimmer top/bottom padding */
           <div className="py-0 flex justify-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
