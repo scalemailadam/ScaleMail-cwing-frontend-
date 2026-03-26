@@ -21,11 +21,14 @@ import BrowserModal from "../Modals/BrowserModal";
 import TextModal from "../Modals/TextModal";
 
 const MODAL_COMPONENTS = {
-  garmentDesignModal: GarmentDesignModal,
-  resumeModal: ResumeModal,
-  browserModal: BrowserModal,
-  textModal: TextModal,
+  garmentdesignmodal: GarmentDesignModal,
+  resumemodal: ResumeModal,
+  browsermodal: BrowserModal,
+  textmodal: TextModal,
 };
+
+// Normalize slugs so "text modal", "Text Modal", "textModal" all match
+const normalizeSlug = (s) => (s || "").replace(/[\s_-]+/g, "").toLowerCase();
 
 export default function Desktop({
   openFolder,
@@ -95,7 +98,7 @@ export default function Desktop({
   }, [openFolder]);
 
   useEffect(() => {
-    if (openFolder?.modalSlug === "openFolder") {
+    if (normalizeSlug(openFolder?.modalSlug) === "openfolder") {
       setFinderViewFolder(null);
       setSelectedFolderId(null);
       setBackStack([]);
@@ -117,7 +120,7 @@ export default function Desktop({
   const desktopCategory = categories.find((c) => c.name === "Desktop");
   const desktopFolders = desktopCategory?.desktop_folders || [];
   foldersRef.current = desktopFolders;
-  const finderFolder = desktopFolders.find((f) => f.modalSlug === "openFolder");
+  const finderFolder = desktopFolders.find((f) => normalizeSlug(f.modalSlug) === "openfolder");
   iconRefs.current = desktopFolders.map(
     (_, i) => iconRefs.current[i] ?? React.createRef()
   );
@@ -137,7 +140,7 @@ export default function Desktop({
       return;
     }
     onOpenFolder(folder);
-    if (folder.modalSlug === "openFolder") {
+    if (normalizeSlug(folder.modalSlug) === "openfolder") {
       setFinderViewFolder(null);
       setSelectedFolderId(null);
       setBackStack([]);
@@ -157,7 +160,7 @@ export default function Desktop({
   };
 
   const handleSidebarClick = (folder) => {
-    const finder = desktopFolders.find((f) => f.modalSlug === "openFolder");
+    const finder = desktopFolders.find((f) => normalizeSlug(f.modalSlug) === "openfolder");
     if (finder && openFolder?.modalSlug !== "openFolder") {
       onOpenFolder(finder);
     }
@@ -368,7 +371,7 @@ export default function Desktop({
       )}
 
       {/* ——— Finder (first‑level modal) ——— */}
-      {openFolder?.modalSlug === "openFolder" && (
+      {normalizeSlug(openFolder?.modalSlug) === "openfolder" && (
         <div
           className="absolute inset-0 bg-black/50 flex items-center justify-center z-30"
           onClick={onCloseFolder}
@@ -417,7 +420,7 @@ export default function Desktop({
                 </button>
 
                 <span className="ml-2 font-medium text-white">
-                  {openFolder?.modalSlug === "openFolder"
+                  {normalizeSlug(openFolder?.modalSlug) === "openfolder"
                     ? finderViewFolder
                       ? finderViewFolder.title
                       : "Finder"
@@ -476,7 +479,7 @@ export default function Desktop({
 
                 <main className="flex-1 p-4 overflow-y-auto">
                   <div className="grid grid-cols-4 gap-4">
-                    {(openFolder?.modalSlug === "openFolder"
+                    {(normalizeSlug(openFolder?.modalSlug) === "openfolder"
                       ? finderViewFolder
                         ? finderViewFolder.items ??
                           finderViewFolder.subItem ??
@@ -518,20 +521,21 @@ export default function Desktop({
                           className="flex flex-col items-center p-2 hover:bg-[#464746] rounded cursor-pointer"
                           onClick={() => {
                             // Handle modal slugs first, regardless of Finder context
-                            if (item.modalSlug === "textModal") {
+                            const slug = normalizeSlug(item.modalSlug);
+                            if (slug === "textmodal") {
                               setOpenTextItem(item);
                               return;
                             }
-                            if (item.modalSlug === "imageFolderModal") {
+                            if (slug === "imagefoldermodal") {
                               setOpenImageFolder(item);
                               return;
                             }
-                            if (item.modalSlug === "pictureModal") {
+                            if (slug === "picturemodal") {
                               if (thumbUrl) setOpenPicture({ url: toUrl(thumbUrl), title });
                               return;
                             }
 
-                            if (openFolder?.modalSlug === "openFolder") {
+                            if (normalizeSlug(openFolder?.modalSlug) === "openfolder") {
                               if (!finderViewFolder) {
                                 // Navigate into sub-folder
                                 setBackStack([...backStack, finderViewFolder]);
@@ -574,7 +578,7 @@ export default function Desktop({
 
       {customModal &&
         (() => {
-          const Modal = MODAL_COMPONENTS[customModal.modalSlug];
+          const Modal = MODAL_COMPONENTS[normalizeSlug(customModal.modalSlug)];
           return Modal ? (
             <Modal
               folder={customModal}
