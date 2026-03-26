@@ -112,6 +112,39 @@ export default function BrowserModal({ folder, onClose, onMinimizeFolder }) {
     return groups;
   };
 
+  // Render Strapi rich text nodes recursively
+  const renderRichTextNode = (node, i) => {
+    // leaf text node
+    if (node.type === "text" || !node.type) {
+      let el = node.text ?? "";
+      if (!el) return null;
+      if (node.bold)          el = <strong key={i}>{el}</strong>;
+      if (node.italic)        el = <em key={i}>{el}</em>;
+      if (node.underline)     el = <u key={i}>{el}</u>;
+      if (node.strikethrough) el = <s key={i}>{el}</s>;
+      if (node.code)          el = <code key={i} className="bg-gray-100 px-1 rounded text-xs font-mono">{el}</code>;
+      return <span key={i}>{el}</span>;
+    }
+    const children = node.children?.map(renderRichTextNode);
+    switch (node.type) {
+      case "paragraph":   return <p key={i} className="mb-3 leading-relaxed">{children}</p>;
+      case "heading": {
+        const Tag = `h${node.level ?? 2}`;
+        const sizes = { 1:"text-2xl", 2:"text-xl", 3:"text-lg", 4:"text-base", 5:"text-sm", 6:"text-xs" };
+        return <Tag key={i} className={`${sizes[node.level ?? 2]} font-bold mb-2`}>{children}</Tag>;
+      }
+      case "list":
+        return node.format === "ordered"
+          ? <ol key={i} className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>
+          : <ul key={i} className="list-disc pl-5 mb-3 space-y-1">{children}</ul>;
+      case "list-item":   return <li key={i}>{children}</li>;
+      case "quote":       return <blockquote key={i} className="border-l-4 border-gray-400 pl-3 italic mb-3 text-gray-600">{children}</blockquote>;
+      case "code":        return <pre key={i} className="bg-gray-100 rounded p-3 text-xs font-mono overflow-x-auto mb-3">{children}</pre>;
+      case "link":        return <a key={i} href={node.url} target="_blank" rel="noreferrer" className="underline text-blue-600">{children}</a>;
+      default:            return <span key={i}>{children}</span>;
+    }
+  };
+
   // Render each section type
   const renderSection = (sec) => {
     switch (sec.__typename) {
@@ -122,14 +155,13 @@ export default function BrowserModal({ folder, onClose, onMinimizeFolder }) {
             className={`mb-4 flex justify-${sec.placementRich}`}
           >
             <div
-              className="prose prose-sm"
+              className="prose prose-sm max-w-none w-full"
               style={{ backgroundColor: sec.backgroundColor }}
-              dangerouslySetInnerHTML={{
-                __html: sec.paragraphText
-                  .map((n) => n.children.map((c) => c.text).join(""))
-                  .join("\n"),
-              }}
-            />
+            >
+              {Array.isArray(sec.paragraphText)
+                ? sec.paragraphText.map(renderRichTextNode)
+                : <p>{String(sec.paragraphText ?? "")}</p>}
+            </div>
           </div>
         );
       case "ComponentSectionsHeadingSection": {
@@ -209,8 +241,9 @@ export default function BrowserModal({ folder, onClose, onMinimizeFolder }) {
       >
         <div className="flex items-center space-x-2">
           <button
+            onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onClose(); }}
             onClick={onClose}
-            className="w-3 h-3 rounded-full bg-[#FF5F57]"
+            className="w-3 h-3 rounded-full bg-[#FF5F57] flex-shrink-0"
           />
           <button
             onClick={() => onMinimizeFolder(folder)}

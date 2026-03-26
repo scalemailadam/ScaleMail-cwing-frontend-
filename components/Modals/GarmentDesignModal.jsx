@@ -114,8 +114,9 @@ export default function GarmentDesignModal({
       >
         <div className="flex items-center space-x-2">
           <button
+            onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onClose(); }}
             onClick={onClose}
-            className="w-3 h-3 rounded-full bg-[#FF5F57]"
+            className="w-3 h-3 rounded-full bg-[#FF5F57] flex-shrink-0"
           />
           <button
             onClick={() => onMinimizeFolder(folder)}
