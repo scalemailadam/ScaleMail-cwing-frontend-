@@ -83,34 +83,23 @@ export default function ResumeModal({ folder, onClose, onMinimizeFolder }) {
         }
       >
         <div className="flex items-center space-x-2">
-          {/* larger touch target wrapper for mobile */}
           <button
             onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onClose(); }}
             onClick={onClose}
-            className="w-7 h-7 flex items-center justify-center -m-2 rounded"
-          >
-            <span className="w-3 h-3 rounded-full bg-[#FF5F57] block" />
-          </button>
+            className="w-3 h-3 rounded-full bg-[#FF5F57] flex-shrink-0"
+          />
           <button
             onClick={() => onMinimizeFolder(folder)}
-            className="w-3 h-3 rounded-full bg-[#FFBD2E]"
+            className="w-3 h-3 rounded-full bg-[#FFBD2E] flex-shrink-0"
           />
           <button
             onClick={() => setFS(!isFS)}
-            className="w-3 h-3 rounded-full bg-[#28C93F]"
+            className="w-3 h-3 rounded-full bg-[#28C93F] flex-shrink-0"
           />
         </div>
         <span className="absolute left-1/2 -translate-x-1/2 font-medium text-white select-none text-sm">
           {folder.title.replace(".exe", "")}
         </span>
-        {/* visible close button on mobile */}
-        <button
-          onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onClose(); }}
-          onClick={onClose}
-          className="md:hidden ml-auto text-white text-lg px-1 z-10"
-        >
-          ✕
-        </button>
         {logoUrl && (
           <Image
             src={logoUrl}
@@ -119,7 +108,7 @@ export default function ResumeModal({ folder, onClose, onMinimizeFolder }) {
             height={28}
             priority
             unoptimized
-            className="hidden md:block ml-auto object-contain h-6"
+            className="ml-auto object-contain h-6"
           />
         )}
       </div>
