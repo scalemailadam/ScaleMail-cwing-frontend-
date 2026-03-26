@@ -195,6 +195,13 @@ export default function Desktop({
     if (slug === "imagefoldermodal") { setOpenImageFolder(item); return; }
     if (slug === "picturemodal") { if (thumbUrl) setOpenPicture({ url: toUrl(thumbUrl), title }); return; }
 
+    // Generic: any slug that maps to a registered modal component
+    if (slug && MODAL_COMPONENTS[slug]) {
+      // Wrap item so modals that expect folder.items (like ResumeModal) still work
+      setCustomModal({ ...item, items: item.items ?? [item] });
+      return;
+    }
+
     if (normalizeSlug(openFolder?.modalSlug) === "openfolder") {
       if (!finderViewFolder) {
         setBackStack((prev) => [...prev, finderViewFolder]);
