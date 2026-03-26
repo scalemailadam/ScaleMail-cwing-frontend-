@@ -5,7 +5,6 @@ import Draggable from "react-draggable";
 import Image from "next/image";
 import { useQuery } from "@apollo/client";
 import { GET_HEADER } from "@/graphql/queries";
-import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
 export default function ResumeModal({ folder, onClose, onMinimizeFolder }) {
   const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL ?? "";
@@ -84,10 +83,14 @@ export default function ResumeModal({ folder, onClose, onMinimizeFolder }) {
         }
       >
         <div className="flex items-center space-x-2">
+          {/* larger touch target wrapper for mobile */}
           <button
+            onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onClose(); }}
             onClick={onClose}
-            className="w-3 h-3 rounded-full bg-[#FF5F57]"
-          />
+            className="w-7 h-7 flex items-center justify-center -m-2 rounded"
+          >
+            <span className="w-3 h-3 rounded-full bg-[#FF5F57] block" />
+          </button>
           <button
             onClick={() => onMinimizeFolder(folder)}
             className="w-3 h-3 rounded-full bg-[#FFBD2E]"
@@ -97,9 +100,17 @@ export default function ResumeModal({ folder, onClose, onMinimizeFolder }) {
             className="w-3 h-3 rounded-full bg-[#28C93F]"
           />
         </div>
-        <span className="absolute left-1/2 -translate-x-1/2 font-medium text-white select-none">
+        <span className="absolute left-1/2 -translate-x-1/2 font-medium text-white select-none text-sm">
           {folder.title.replace(".exe", "")}
         </span>
+        {/* visible close button on mobile */}
+        <button
+          onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onClose(); }}
+          onClick={onClose}
+          className="md:hidden ml-auto text-white text-lg px-1 z-10"
+        >
+          ✕
+        </button>
         {logoUrl && (
           <Image
             src={logoUrl}
@@ -108,18 +119,37 @@ export default function ResumeModal({ folder, onClose, onMinimizeFolder }) {
             height={28}
             priority
             unoptimized
-            className="ml-auto object-contain h-6"
+            className="hidden md:block ml-auto object-contain h-6"
           />
         )}
       </div>
-      <div className="flex items-center h-7 px-3 bg-black border-b border-gray-800 text-xs">
+      {/* toolbar: page nav + download */}
+      <div className="flex items-center h-9 px-3 bg-black border-b border-gray-800 text-xs gap-2">
+        {images.length > 1 && (
+          <div className="flex items-center gap-3">
+            <button
+              onTouchEnd={(e) => { e.stopPropagation(); setIdx((i) => (i - 1 + images.length) % images.length); }}
+              onClick={() => setIdx((i) => (i - 1 + images.length) % images.length)}
+              className="text-white px-2 py-1 text-base"
+            >
+              ‹
+            </button>
+            <span className="text-gray-400">{idx + 1} / {images.length}</span>
+            <button
+              onTouchEnd={(e) => { e.stopPropagation(); setIdx((i) => (i + 1) % images.length); }}
+              onClick={() => setIdx((i) => (i + 1) % images.length)}
+              className="text-white px-2 py-1 text-base"
+            >
+              ›
+            </button>
+          </div>
+        )}
         <span className="ml-auto">
-          {/* download attr lets the browser save without navigating away */}
           {images.length > 0 && (
             <a
               href={images[idx]}
               download
-              className="font-bold text-md text-white  rounded-lg p-1 hover:underline"
+              className="font-bold text-md text-white rounded-lg p-1 hover:underline"
             >
               Download
             </a>
@@ -156,28 +186,6 @@ export default function ResumeModal({ folder, onClose, onMinimizeFolder }) {
           </div>
         )}
 
-        {/* arrows */}
-        {images.length > 1 && (
-          <>
-            <button
-              onClick={() =>
-                setIdx((i) => (i - 1 + images.length) % images.length)
-              }
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-800 hover:text-black"
-            >
-              <FaChevronLeft size={26} />
-            </button>
-            <button
-              onClick={() => setIdx((i) => (i + 1) % images.length)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-800 hover:text-black"
-            >
-              <FaChevronRight size={26} />
-            </button>
-            <span className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-gray-700">
-              Page {idx + 1} / {images.length}
-            </span>
-          </>
-        )}
       </div>
     </div>
   );
@@ -196,7 +204,7 @@ export default function ResumeModal({ folder, onClose, onMinimizeFolder }) {
           bounds="parent"
           nodeRef={dragRef}
           /* ↑ start 80 px higher than exact centre */
-          defaultPosition={{ x: 0, y: -40 }}
+          defaultPosition={{ x: 0, y: 0 }}
         >
           <div ref={dragRef}>
             <WindowBody full={false} />
