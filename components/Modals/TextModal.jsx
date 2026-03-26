@@ -3,39 +3,9 @@
 import React, { useState, useRef } from "react";
 import Draggable from "react-draggable";
 import Image from "next/image";
+import ReactMarkdown from "react-markdown";
 import { useQuery } from "@apollo/client";
 import { GET_HEADER } from "@/graphql/queries";
-
-const renderRichTextNode = (node, i) => {
-  if (node.type === "text" || !node.type) {
-    let el = node.text ?? "";
-    if (!el) return null;
-    if (node.bold)          el = <strong key={i}>{el}</strong>;
-    if (node.italic)        el = <em key={i}>{el}</em>;
-    if (node.underline)     el = <u key={i}>{el}</u>;
-    if (node.strikethrough) el = <s key={i}>{el}</s>;
-    if (node.code)          el = <code key={i} className="bg-gray-100 px-1 rounded text-xs font-mono">{el}</code>;
-    return <span key={i}>{el}</span>;
-  }
-  const children = node.children?.map(renderRichTextNode);
-  switch (node.type) {
-    case "paragraph":   return <p key={i} className="mb-3 leading-relaxed">{children}</p>;
-    case "heading": {
-      const Tag = `h${node.level ?? 2}`;
-      const sizes = { 1:"text-2xl", 2:"text-xl", 3:"text-lg", 4:"text-base", 5:"text-sm", 6:"text-xs" };
-      return <Tag key={i} className={`${sizes[node.level ?? 2]} font-bold mb-2`}>{children}</Tag>;
-    }
-    case "list":
-      return node.format === "ordered"
-        ? <ol key={i} className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>
-        : <ul key={i} className="list-disc pl-5 mb-3 space-y-1">{children}</ul>;
-    case "list-item":   return <li key={i}>{children}</li>;
-    case "quote":       return <blockquote key={i} className="border-l-4 border-gray-400 pl-3 italic mb-3 text-gray-600">{children}</blockquote>;
-    case "code":        return <pre key={i} className="bg-gray-100 rounded p-3 text-xs font-mono overflow-x-auto mb-3">{children}</pre>;
-    case "link":        return <a key={i} href={node.url} target="_blank" rel="noreferrer" className="underline text-blue-600">{children}</a>;
-    default:            return <span key={i}>{children}</span>;
-  }
-};
 
 export default function TextModal({ item, onClose, onMinimizeFolder }) {
   const [isFS, setFS] = useState(false);
@@ -49,12 +19,7 @@ export default function TextModal({ item, onClose, onMinimizeFolder }) {
     : null;
 
   const title = item?.title ?? item?.Title ?? "Document";
-  const raw = item?.richContent;
-  // Strapi may return richtext as a JSON string or a parsed array
-  let content = raw;
-  if (typeof raw === "string") {
-    try { content = JSON.parse(raw); } catch { content = raw; }
-  }
+  const content = item?.richContent ?? "";
 
   const WindowBody = ({ full }) => (
     <div
@@ -103,11 +68,9 @@ export default function TextModal({ item, onClose, onMinimizeFolder }) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-6 text-sm text-gray-800">
-        {Array.isArray(content)
-          ? content.map(renderRichTextNode)
-          : content
-          ? <p>{String(content)}</p>
+      <div className="flex-1 overflow-auto p-6 text-sm text-gray-800 prose prose-sm max-w-none">
+        {content
+          ? <ReactMarkdown>{String(content)}</ReactMarkdown>
           : <p className="text-gray-400 italic">No content yet.</p>
         }
       </div>
