@@ -515,30 +515,34 @@ export default function Desktop({
                           key={item.id || item.documentId}
                           className="flex flex-col items-center p-2 hover:bg-[#464746] rounded cursor-pointer"
                           onClick={() => {
+                            // Handle modal slugs first, regardless of Finder context
+                            if (item.modalSlug === "textModal") {
+                              setOpenTextItem(item);
+                              return;
+                            }
+                            if (item.modalSlug === "imageFolderModal") {
+                              setOpenImageFolder(item);
+                              return;
+                            }
+                            if (item.modalSlug === "pictureModal") {
+                              if (thumbUrl) setOpenPicture({ url: toUrl(thumbUrl), title });
+                              return;
+                            }
+
                             if (openFolder?.modalSlug === "openFolder") {
                               if (!finderViewFolder) {
+                                // Navigate into sub-folder
                                 setBackStack([...backStack, finderViewFolder]);
                                 setFinderViewFolder(item);
                                 setForwardStack([]);
                                 return;
                               }
-                              const fullUrl =
-                                item.contentItems?.image?.[0]?.url;
+                              const fullUrl = item.contentItems?.image?.[0]?.url;
                               if (fullUrl) {
                                 setOpenPicture({ url: toUrl(fullUrl), title });
                               }
                             } else {
-                              if (item.modalSlug === "imageFolderModal") {
-                                setOpenImageFolder(item);
-                              } else if (item.modalSlug === "pictureModal") {
-                                if (thumbUrl)
-                                  setOpenPicture({
-                                    url: toUrl(thumbUrl),
-                                    title,
-                                  });
-                              } else if (item.modalSlug === "textModal") {
-                                setOpenTextItem(item);
-                              } else if (item.url) {
+                              if (item.url) {
                                 window.open(item.url, "_blank");
                               }
                             }
