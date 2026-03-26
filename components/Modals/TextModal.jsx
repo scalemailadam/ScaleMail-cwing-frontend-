@@ -49,7 +49,12 @@ export default function TextModal({ item, onClose, onMinimizeFolder }) {
     : null;
 
   const title = item?.title ?? item?.Title ?? "Document";
-  const content = item?.richContent;
+  const raw = item?.richContent;
+  // Strapi may return richtext as a JSON string or a parsed array
+  let content = raw;
+  if (typeof raw === "string") {
+    try { content = JSON.parse(raw); } catch { content = raw; }
+  }
 
   const WindowBody = ({ full }) => (
     <div
