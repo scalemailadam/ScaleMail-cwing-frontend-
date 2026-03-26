@@ -121,7 +121,9 @@ export default function Desktop({
   iconRefs.current = desktopFolders.map(
     (_, i) => iconRefs.current[i] ?? React.createRef()
   );
-  const finderItems = desktopFolders.flatMap((folder) => folder.items);
+  const finderItems = desktopFolders
+    .flatMap((folder) => folder.items ?? [])
+    .filter((item) => item && (item.title || item.Title));
   const finderCategories = categories
     .filter((c) => c.name !== "Desktop")
     .map((c) => ({ name: c.name, folders: c.desktop_folders }));

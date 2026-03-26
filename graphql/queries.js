@@ -64,7 +64,6 @@ const GET_FOLDER = gql`
             url
           }
           url
-          modalSlug
           subItem {
             id
             text
