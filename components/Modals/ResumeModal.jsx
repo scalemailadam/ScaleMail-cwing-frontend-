@@ -119,7 +119,7 @@ export default function ResumeModal({ folder, onClose, onMinimizeFolder }) {
           </div>
         ) : images[idx]?.toLowerCase().endsWith(".pdf") ? (
           <iframe
-            src={images[idx].replace("/upload/", "/upload/fl_inline/")}
+            src={`https://docs.google.com/viewer?url=${encodeURIComponent(images[idx])}&embedded=true`}
             className="w-full h-full border-0"
             title="Resume PDF"
           />
