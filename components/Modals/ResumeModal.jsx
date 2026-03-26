@@ -28,7 +28,23 @@ export default function ResumeModal({ folder, onClose, onMinimizeFolder }) {
   /* state */
   const [idx, setIdx] = useState(0);
   const [isFS, setFS] = useState(false);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
   const dragRef = useRef(null);
+
+  /* fetch PDF as blob to avoid X-Frame-Options cross-origin restriction */
+  useEffect(() => {
+    const url = images[idx];
+    if (!url?.toLowerCase().endsWith(".pdf")) { setPdfBlobUrl(null); return; }
+    let objectUrl;
+    fetch(url)
+      .then((r) => r.blob())
+      .then((blob) => {
+        objectUrl = URL.createObjectURL(blob);
+        setPdfBlobUrl(objectUrl);
+      })
+      .catch(() => setPdfBlobUrl(null));
+    return () => { if (objectUrl) URL.revokeObjectURL(objectUrl); };
+  }, [images[idx]]);
 
   /* keyboard arrows */
   useEffect(() => {
@@ -118,11 +134,17 @@ export default function ResumeModal({ folder, onClose, onMinimizeFolder }) {
             <p className="text-gray-700 italic">No résumé image found.</p>
           </div>
         ) : images[idx]?.toLowerCase().endsWith(".pdf") ? (
-          <iframe
-            src={`https://docs.google.com/viewer?url=${encodeURIComponent(images[idx])}&embedded=true`}
-            className="w-full h-full border-0"
-            title="Resume PDF"
-          />
+          pdfBlobUrl ? (
+            <iframe
+              src={pdfBlobUrl}
+              className="w-full h-full border-0"
+              title="Resume PDF"
+            />
+          ) : (
+            <div className="h-full flex items-center justify-center">
+              <p className="text-gray-500 italic text-sm">Loading PDF…</p>
+            </div>
+          )
         ) : (
           <div className="py-0 flex justify-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
