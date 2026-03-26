@@ -594,7 +594,9 @@ export default function Desktop({
               folder={customModal}
               onClose={() => {
                 setCustomModal(null);
-                onCloseFolder();
+                if (normalizeSlug(openFolder?.modalSlug) !== "openfolder") {
+                  onCloseFolder();
+                }
               }}
               onMinimizeFolder={() => minimizeCustomModal(customModal)}
             />
