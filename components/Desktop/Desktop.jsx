@@ -18,12 +18,13 @@ import GarmentDesignModal from "../Modals/GarmentDesignModal";
 import ResumeModal from "../Modals/ResumeModal";
 
 import BrowserModal from "../Modals/BrowserModal";
+import TextModal from "../Modals/TextModal";
 
 const MODAL_COMPONENTS = {
   garmentDesignModal: GarmentDesignModal,
   resumeModal: ResumeModal,
-
   browserModal: BrowserModal,
+  textModal: TextModal,
 };
 
 export default function Desktop({
@@ -46,6 +47,7 @@ export default function Desktop({
   const [customModal, setCustomModal] = useState(null);
   const [openImageFolder, setOpenImageFolder] = useState(null);
   const [openPicture, setOpenPicture] = useState(null);
+  const [openTextItem, setOpenTextItem] = useState(null);
   const [selectedFolderId, setSelectedFolderId] = useState(null);
   const [backStack, setBackStack] = useState([]);
   const [forwardStack, setForwardStack] = useState([]);
@@ -534,6 +536,8 @@ export default function Desktop({
                                     url: toUrl(thumbUrl),
                                     title,
                                   });
+                              } else if (item.modalSlug === "textModal") {
+                                setOpenTextItem(item);
                               } else if (item.url) {
                                 window.open(item.url, "_blank");
                               }
@@ -679,6 +683,15 @@ export default function Desktop({
             />
           </div>
         </div>
+      )}
+
+      {/* ——— text document modal ——— */}
+      {openTextItem && (
+        <TextModal
+          item={openTextItem}
+          onClose={() => setOpenTextItem(null)}
+          onMinimizeFolder={() => setOpenTextItem(null)}
+        />
       )}
     </div>
   );

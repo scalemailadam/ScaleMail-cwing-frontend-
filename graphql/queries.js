@@ -59,6 +59,7 @@ const GET_FOLDER = gql`
           reactIcon
           reactIconColor
           modalSlug
+          richContent
           icon {
             url
           }
