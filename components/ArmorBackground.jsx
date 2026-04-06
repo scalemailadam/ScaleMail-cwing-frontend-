@@ -127,7 +127,7 @@ function ScalesInstanced({ scaleSize }) {
         `#ifdef USE_MAP
            // Steel blue gradient: bright tip → dark base
            vec3 tipColor  = vec3(0.208, 0.333, 0.400); // #355566
-           vec3 baseColor = vec3(0.067, 0.133, 0.169); // #11222b
+           vec3 baseColor = vec3(0.063, 0.149, 0.188); // #102630
            vec3 scaleColor = mix(tipColor, baseColor, vLocalUv.y);
            // Central ridge highlight
            float ridge = 1.0 - 0.15 * pow(abs(vLocalUv.x - 0.5) * 2.0, 1.5);
