@@ -125,9 +125,9 @@ function ScalesInstanced({ scaleSize }) {
       shader.fragmentShader = shader.fragmentShader.replace(
         "#include <map_fragment>",
         `#ifdef USE_MAP
-           // Deep red gradient: bright tip → dark base
-           vec3 tipColor  = vec3(0.557, 0.196, 0.196); // #8e3232
-           vec3 baseColor = vec3(0.290, 0.102, 0.102); // #4a1a1a
+           // Steel blue gradient: bright tip → dark base
+           vec3 tipColor  = vec3(0.592, 0.690, 0.737); // #97b0bc
+           vec3 baseColor = vec3(0.314, 0.427, 0.486); // #506d7c
            vec3 scaleColor = mix(tipColor, baseColor, vLocalUv.y);
            // Central ridge highlight
            float ridge = 1.0 - 0.15 * pow(abs(vLocalUv.x - 0.5) * 2.0, 1.5);
