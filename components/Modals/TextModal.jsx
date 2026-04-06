@@ -21,6 +21,8 @@ export default function TextModal({ item, folder, onClose, onMinimizeFolder }) {
   const data = item ?? folder;
   const title = data?.title ?? data?.Title ?? "Document";
   const content = data?.richContent ?? "";
+  const bgColor = data?.backgroundColor || "#ffffff";
+  const txtColor = data?.textColor || "#1f2937";
 
   const WindowBody = ({ full }) => (
     <div
@@ -69,7 +71,7 @@ export default function TextModal({ item, folder, onClose, onMinimizeFolder }) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-6 text-sm text-gray-800">
+      <div className="flex-1 overflow-auto p-6 text-sm" style={{ backgroundColor: bgColor, color: txtColor }}>
         {content
           ? <ReactMarkdown
               components={{
