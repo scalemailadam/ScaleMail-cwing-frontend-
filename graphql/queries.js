@@ -48,6 +48,7 @@ const GET_FOLDER = gql`
         title
         modalSlug
         url
+        richContent
         icon {
           url
         }

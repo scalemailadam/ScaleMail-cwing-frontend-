@@ -7,7 +7,7 @@ import ReactMarkdown from "react-markdown";
 import { useQuery } from "@apollo/client";
 import { GET_HEADER } from "@/graphql/queries";
 
-export default function TextModal({ item, onClose, onMinimizeFolder }) {
+export default function TextModal({ item, folder, onClose, onMinimizeFolder }) {
   const [isFS, setFS] = useState(false);
   const dragRef = useRef(null);
 
@@ -18,8 +18,9 @@ export default function TextModal({ item, onClose, onMinimizeFolder }) {
     ? toUrl(headerData.header.logo[0].url)
     : null;
 
-  const title = item?.title ?? item?.Title ?? "Document";
-  const content = item?.richContent ?? "";
+  const data = item ?? folder;
+  const title = data?.title ?? data?.Title ?? "Document";
+  const content = data?.richContent ?? "";
 
   const WindowBody = ({ full }) => (
     <div
