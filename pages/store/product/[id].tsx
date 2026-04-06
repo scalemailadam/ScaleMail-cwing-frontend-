@@ -67,8 +67,12 @@ export default function ProductDetail() {
     );
   }
 
+  const sizes: string[] = product.sizes
+    ? product.sizes.split(',').map((s: string) => s.trim()).filter(Boolean)
+    : [];
+
   const handleAddToCart = () => {
-    if (product.sizes?.length && !selectedSize) { toast.error("Please select a size"); return; }
+    if (sizes.length && !selectedSize) { toast.error("Please select a size"); return; }
     if (product.colors?.length && !selectedColor) { toast.error("Please select a color"); return; }
     const cv = product.colors?.find((c: any) => c.name === selectedColor);
     addItem({
@@ -132,11 +136,11 @@ export default function ProductDetail() {
               <div className="font-mono text-sm tracking-widest mb-8">${product.price.toLocaleString()}</div>
               <p className="font-mono text-xs leading-relaxed text-tech-gray-800 mb-12 whitespace-pre-line">{product.description}</p>
 
-              {product.sizes && product.sizes.length > 0 && (
+              {sizes.length > 0 && (
                 <div className="mb-8">
                   <div className="font-mono text-xs tracking-widest text-tech-gray-800 mb-3">SIZE</div>
                   <div className="flex gap-2">
-                    {product.sizes.map((size: string) => (
+                    {sizes.map((size: string) => (
                       <button key={size} onClick={() => setSelectedSize(size === selectedSize ? null : size)}
                         className={`font-mono text-xs tracking-widest px-5 py-3 border transition-colors cursor-pointer ${selectedSize === size ? "bg-tech-black text-tech-white border-tech-black" : "border-tech-gray-300 hover:border-tech-black"}`}>
                         {size}

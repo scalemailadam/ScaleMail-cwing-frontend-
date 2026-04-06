@@ -5,7 +5,7 @@ const GET_DOCK = gql`
     dock {
       dockItem {
         title
-        reactIconName
+        reactIcon
         url
         modalSlug
         reactIconColor
@@ -45,7 +45,6 @@ const GET_FOLDER = gql`
       name
       desktop_folders {
         documentId
-        uuid
         title
         modalSlug
         url
@@ -55,7 +54,7 @@ const GET_FOLDER = gql`
 
         items {
           id
-          title: Title
+          title
           reactIcon
           reactIconColor
           modalSlug

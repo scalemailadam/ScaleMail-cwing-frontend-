@@ -58,7 +58,7 @@ export default function Dock({
     IoIcons[name] ||
     FaIcons.FaQuestion;
 
-  const renderStaticIcon = ({ title, icon, reactIconName, reactIconColor }) => {
+  const renderStaticIcon = ({ title, icon, reactIcon, reactIconColor }) => {
     const STRAPI = process.env.NEXT_PUBLIC_STRAPI_URL ?? "";
     const imgUrl = icon?.[0]?.url;
     if (imgUrl) {
@@ -70,7 +70,7 @@ export default function Dock({
         />
       );
     }
-    const Icon = pickIcon(reactIconName);
+    const Icon = pickIcon(reactIcon);
     return (
       <Icon
         className="w-10 h-10"
