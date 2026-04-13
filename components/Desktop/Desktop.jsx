@@ -483,7 +483,7 @@ export default function Desktop({
         isMobile ? (
           /* ═══ MOBILE FINDER ═══ */
           <div
-            className="fixed inset-0 bg-[#201e25] z-30 flex flex-col"
+            className="absolute inset-0 bg-[#201e25] z-30 flex flex-col"
             onTouchStart={handleSwipeStart}
             onTouchEnd={handleSwipeEnd}
           >
