@@ -45,6 +45,9 @@ const GET_FOLDER = gql`
       name
       reactIcon
       reactIconColor
+      icon {
+        url
+      }
       desktop_folders {
         documentId
         title

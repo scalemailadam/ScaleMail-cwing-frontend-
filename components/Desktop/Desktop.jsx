@@ -149,7 +149,7 @@ export default function Desktop({
     .filter((item) => item && (item.title || item.Title));
   const finderCategories = categories
     .filter((c) => c.name !== "Desktop")
-    .map((c) => ({ name: c.name, folders: c.desktop_folders, reactIcon: c.reactIcon, reactIconColor: c.reactIconColor }));
+    .map((c) => ({ name: c.name, folders: c.desktop_folders, reactIcon: c.reactIcon, reactIconColor: c.reactIconColor, icon: c.icon }));
 
   const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL ?? "";
   const toUrl = (u = "") => (u.startsWith("http") ? u : `${STRAPI_URL}${u}`);
@@ -541,8 +541,9 @@ export default function Desktop({
                     <FaIcons.FaChevronRight className="text-gray-500 text-xs ml-2" />
                   </button>
 
-                  {finderCategories.map(({ name, folders, reactIcon, reactIconColor }) => {
+                  {finderCategories.map(({ name, folders, reactIcon, reactIconColor, icon }) => {
                     const CatIcon = (reactIcon && (FaIcons[reactIcon] || IoIcons[reactIcon] || GiIcons[reactIcon] || SiIcons[reactIcon])) || FaIcons.FaFolder;
+                    const iconUrl = icon?.url;
                     return (
                       <button
                         key={name}
@@ -551,7 +552,9 @@ export default function Desktop({
                         className="flex items-center w-full px-4 py-3.5 border-b border-gray-800 active:bg-gray-800/50"
                       >
                         <div className="w-8 h-8 flex items-center justify-center mr-3 flex-shrink-0">
-                          <CatIcon className="w-7 h-7" style={{ color: reactIconColor || "#7DD3FC" }} />
+                          {iconUrl
+                            ? <img src={toUrl(iconUrl)} className="w-7 h-7 object-contain" />
+                            : <CatIcon className="w-7 h-7" style={{ color: reactIconColor || "#7DD3FC" }} />}
                         </div>
                         <span className="text-white text-sm flex-1 text-left">{name}</span>
                         <FaIcons.FaChevronRight className="text-gray-500 text-xs ml-2" />
@@ -687,12 +690,15 @@ export default function Desktop({
                       {renderFolderIcon(finderFolder, "w-5 h-5 mr-2")}
                       <span className="text-white">Finder</span>
                     </div>
-                    {finderCategories.map(({ name, folders, reactIcon, reactIconColor }) => {
+                    {finderCategories.map(({ name, folders, reactIcon, reactIconColor, icon }) => {
                     const CatIcon = (reactIcon && (FaIcons[reactIcon] || IoIcons[reactIcon] || GiIcons[reactIcon] || SiIcons[reactIcon])) || FaIcons.FaFolder;
+                    const iconUrl = icon?.url;
                     return (
                       <div key={name} className="mb-4">
                         <div className="px-4 py-1 text-xs font-semibold uppercase text-gray-500 flex items-center gap-1">
-                          <CatIcon className="w-3 h-3" style={{ color: reactIconColor || "#7DD3FC" }} />
+                          {iconUrl
+                            ? <img src={toUrl(iconUrl)} className="w-3 h-3 object-contain" />
+                            : <CatIcon className="w-3 h-3" style={{ color: reactIconColor || "#7DD3FC" }} />}
                           {name}
                         </div>
                         {folders.map((f) => {
