@@ -47,6 +47,7 @@ export default function Desktop({
   const [finderViewFolder, setFinderViewFolder] = useState(null);
 
   const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [customModal, setCustomModal] = useState(null);
   const [openImageFolder, setOpenImageFolder] = useState(null);
   const [openPicture, setOpenPicture] = useState(null);
@@ -54,6 +55,14 @@ export default function Desktop({
   const [selectedFolderId, setSelectedFolderId] = useState(null);
   const [backStack, setBackStack] = useState([]);
   const [forwardStack, setForwardStack] = useState([]);
+
+  // Mobile Finder navigation state
+  const [mobileNavLevel, setMobileNavLevel] = useState("categories");
+  const [activeCategoryFolders, setActiveCategoryFolders] = useState(null);
+  const [activeCategoryName, setActiveCategoryName] = useState("");
+  const [mobileBackStack, setMobileBackStack] = useState([]);
+  const [slideDirection, setSlideDirection] = useState("right");
+  const swipeRef = useRef({ x: 0, y: 0 });
 
   // Multi-select state
   const [iconPositions, setIconPositions] = useState({});
@@ -72,6 +81,13 @@ export default function Desktop({
       typeof window !== "undefined" &&
         ("ontouchstart" in window || navigator.maxTouchPoints > 0)
     );
+  }, []);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
   }, []);
 
   // Initialize icon positions once data loads
@@ -103,6 +119,10 @@ export default function Desktop({
       setSelectedFolderId(null);
       setBackStack([]);
       setForwardStack([]);
+      setMobileNavLevel("categories");
+      setActiveCategoryFolders(null);
+      setActiveCategoryName("");
+      setMobileBackStack([]);
     }
   }, [openFolder]);
 
@@ -186,6 +206,66 @@ export default function Desktop({
     setForwardStack(forwardStack.slice(0, -1));
     setBackStack([...backStack, finderViewFolder]);
     setFinderViewFolder(next);
+  };
+
+  // ── Mobile Finder navigation ─────────────────────────────────────────────
+  const mobileNavigateTo = (level, data) => {
+    setSlideDirection("right");
+    setMobileBackStack((prev) => [
+      ...prev,
+      { level: mobileNavLevel, categoryFolders: activeCategoryFolders, categoryName: activeCategoryName, folder: finderViewFolder },
+    ]);
+    if (level === "folders") {
+      setMobileNavLevel("folders");
+      setActiveCategoryFolders(data.folders);
+      setActiveCategoryName(data.name);
+      setFinderViewFolder(null);
+    } else if (level === "items") {
+      setMobileNavLevel("items");
+      setFinderViewFolder(data.folder);
+      setSelectedFolderId(data.folder?.documentId);
+    }
+  };
+
+  const mobileGoBack = () => {
+    if (mobileBackStack.length === 0) { onCloseFolder(); return; }
+    setSlideDirection("left");
+    const prev = mobileBackStack[mobileBackStack.length - 1];
+    setMobileBackStack((s) => s.slice(0, -1));
+    setMobileNavLevel(prev.level);
+    setActiveCategoryFolders(prev.categoryFolders);
+    setActiveCategoryName(prev.categoryName);
+    setFinderViewFolder(prev.folder);
+  };
+
+  const handleSwipeStart = (e) => {
+    swipeRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  };
+  const handleSwipeEnd = (e) => {
+    const dx = e.changedTouches[0].clientX - swipeRef.current.x;
+    const dy = Math.abs(e.changedTouches[0].clientY - swipeRef.current.y);
+    if (swipeRef.current.x < 30 && dx > 60 && dy < 100) mobileGoBack();
+  };
+
+  const mobileHandleItemTap = (item) => {
+    const slug = normalizeSlug(item.modalSlug);
+    const title = item.title ?? item.text;
+    const thumbUrl = item.icon?.[0]?.url ?? item.image?.[0]?.url;
+
+    if (item.url) { window.open(item.url, "_blank", "noopener,noreferrer"); return; }
+    if (slug === "textmodal") { setOpenTextItem(item); return; }
+    if (slug === "imagefoldermodal") { setOpenImageFolder(item); return; }
+    if (slug === "picturemodal") { if (thumbUrl) setOpenPicture({ url: toUrl(thumbUrl), title }); return; }
+    if (slug && MODAL_COMPONENTS[slug]) { setCustomModal({ ...item, items: item.items ?? [item] }); return; }
+
+    // Navigate into sub-items
+    if (item.subItem?.length) {
+      mobileNavigateTo("items", { folder: item });
+      return;
+    }
+    // Fallback: image
+    const fullUrl = item.contentItems?.image?.[0]?.url;
+    if (fullUrl) setOpenPicture({ url: toUrl(fullUrl), title });
   };
 
   // Extracted grid item click handler (used by both onClick and onTouchEnd)
@@ -400,190 +480,286 @@ export default function Desktop({
 
       {/* ——— Finder (first‑level modal) ——— */}
       {normalizeSlug(openFolder?.modalSlug) === "openfolder" && (
-        <div
-          className="absolute inset-0 bg-black/50 flex items-center justify-center z-30"
-          onClick={onCloseFolder}
-        >
-          <Draggable bounds="parent" nodeRef={modalRef} disabled={isFullscreen || isTouchDevice}>
-            <div
-              ref={modalRef}
-              onClick={(e) => e.stopPropagation()}
-              className={`bg-[#201e25] border border-gray-900 rounded-lg shadow-2xl ${
-                isFullscreen ? "w-full h-full" : "w-full h-full md:w-2/3 md:h-2/3"
-              } flex flex-col overflow-hidden`}
-            >
-              {/* title bar */}
-              <div className="flex items-center space-x-2 h-8 px-3 bg-[#363539] border-b border-black">
+        isMobile ? (
+          /* ═══ MOBILE FINDER ═══ */
+          <div
+            className="fixed inset-0 bg-[#201e25] z-30 flex flex-col"
+            onTouchStart={handleSwipeStart}
+            onTouchEnd={handleSwipeEnd}
+          >
+            {/* Nav bar */}
+            <div className="flex items-center h-12 px-3 bg-[#363539]/95 backdrop-blur-md border-b border-black flex-shrink-0">
+              {mobileNavLevel !== "categories" ? (
+                <button
+                  onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); mobileGoBack(); }}
+                  onClick={mobileGoBack}
+                  className="flex items-center text-blue-400 mr-2"
+                >
+                  <FaIcons.FaChevronLeft className="text-xs mr-1" />
+                  <span className="text-sm">Back</span>
+                </button>
+              ) : (
                 <button
                   onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onCloseFolder(); }}
                   onClick={onCloseFolder}
-                  className="w-3 h-3 rounded-full bg-[#FF5F57] hover:opacity-80"
-                />
-                <button
-                  onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onMinimizeFolder(openFolder); }}
-                  onClick={() => onMinimizeFolder(openFolder)}
-                  className="w-3 h-3 rounded-full bg-[#FFBD2E] hover:opacity-80"
-                />
-                <button
-                  onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onToggleFullscreen(); }}
-                  onClick={onToggleFullscreen}
-                  className="w-3 h-3 rounded-full bg-[#28C93F] hover:opacity-80"
-                />
-                <button
-                  onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); if (backStack.length > 0) goBack(); }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    goBack();
-                  }}
-                  disabled={backStack.length === 0}
-                  className="disabled:opacity-50 ml-3"
+                  className="text-blue-400 mr-2 text-sm"
                 >
-                  <FaIcons.FaChevronLeft className="text-white" />
+                  Close
                 </button>
-                <button
-                  onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); if (forwardStack.length > 0) goForward(); }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    goForward();
-                  }}
-                  disabled={forwardStack.length === 0}
-                  className="disabled:opacity-50"
-                >
-                  <FaIcons.FaChevronRight className="text-white" />
-                </button>
+              )}
+              <span className="flex-1 text-center font-medium text-white text-sm truncate">
+                {mobileNavLevel === "categories" && "Browse"}
+                {mobileNavLevel === "folders" && activeCategoryName}
+                {mobileNavLevel === "items" && (finderViewFolder?.title ?? "All Files")}
+              </span>
+              <button
+                onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onCloseFolder(); }}
+                onClick={onCloseFolder}
+                className="text-gray-400 ml-2"
+              >
+                <FaIcons.FaTimes className="text-base" />
+              </button>
+            </div>
 
-                <span className="ml-2 font-medium text-white">
-                  {normalizeSlug(openFolder?.modalSlug) === "openfolder"
-                    ? finderViewFolder
-                      ? finderViewFolder.title
-                      : "Finder"
-                    : openFolder.title}
-                </span>
-              </div>
-
-              <div className="flex flex-1">
-                {/* sidebar */}
-                <aside className="w-1/3 md:w-1/4 bg-[#201e25] border-r border-black overflow-y-auto">
-                  <div className="px-4 py-1 text-xs font-semibold uppercase text-gray-500">
-                    Finder
-                  </div>
-                  <div
-                    onTouchEnd={(e) => {
-                      e.stopPropagation();
-                      onOpenFolder(finderFolder);
-                      setFinderViewFolder(null);
-                      setSelectedFolderId(null);
-                      setBackStack([]);
-                      setForwardStack([]);
-                    }}
-                    onClick={() => {
-                      onOpenFolder(finderFolder);
-                      setFinderViewFolder(null);
-                      setSelectedFolderId(null);
-                      setBackStack([]);
-                      setForwardStack([]);
-                    }}
-                    className={`flex items-center px-4 py-2 cursor-pointer ${
-                      selectedFolderId === null
-                        ? "bg-[#464746]"
-                        : "hover:bg-[#464746] bg-[#201e25]"
-                    }`}
+            {/* Content area */}
+            <div
+              key={`${mobileNavLevel}-${activeCategoryName}-${finderViewFolder?.documentId ?? "root"}`}
+              className={`flex-1 overflow-y-auto ${slideDirection === "right" ? "slide-in-right" : "slide-in-left"}`}
+            >
+              {/* ── Categories level ── */}
+              {mobileNavLevel === "categories" && (
+                <div>
+                  <button
+                    onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); mobileNavigateTo("items", { folder: null }); }}
+                    onClick={() => mobileNavigateTo("items", { folder: null })}
+                    className="flex items-center w-full px-4 py-3.5 border-b border-gray-800 active:bg-gray-800/50"
                   >
-                    {renderFolderIcon(finderFolder, "w-5 h-5 mr-2")}
-                    <span className="text-white">Finder</span>
-                  </div>
+                    <div className="w-8 h-8 flex items-center justify-center mr-3 flex-shrink-0">
+                      {finderFolder && renderFolderIcon(finderFolder, "w-7 h-7")}
+                    </div>
+                    <span className="text-white text-sm flex-1 text-left">All Files</span>
+                    <FaIcons.FaChevronRight className="text-gray-500 text-xs ml-2" />
+                  </button>
+
                   {finderCategories.map(({ name, folders }) => (
-                    <div key={name} className="mb-4">
-                      <div className="px-4 py-1 text-xs font-semibold uppercase text-gray-500">
-                        {name}
+                    <button
+                      key={name}
+                      onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); mobileNavigateTo("folders", { name, folders }); }}
+                      onClick={() => mobileNavigateTo("folders", { name, folders })}
+                      className="flex items-center w-full px-4 py-3.5 border-b border-gray-800 active:bg-gray-800/50"
+                    >
+                      <div className="w-8 h-8 flex items-center justify-center mr-3 flex-shrink-0">
+                        <FaIcons.FaFolder className="w-7 h-7 text-blue-400" />
                       </div>
-                      {folders.map((f) => {
-                        const isActive = f.documentId === selectedFolderId;
+                      <span className="text-white text-sm flex-1 text-left">{name}</span>
+                      <FaIcons.FaChevronRight className="text-gray-500 text-xs ml-2" />
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* ── Folders level ── */}
+              {mobileNavLevel === "folders" && activeCategoryFolders && (
+                <div>
+                  {activeCategoryFolders.map((f) => (
+                    <button
+                      key={f.documentId}
+                      onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); mobileNavigateTo("items", { folder: f }); }}
+                      onClick={() => mobileNavigateTo("items", { folder: f })}
+                      className="flex items-center w-full px-4 py-3.5 border-b border-gray-800 active:bg-gray-800/50"
+                    >
+                      <div className="w-8 h-8 flex items-center justify-center mr-3 flex-shrink-0">
+                        {renderFolderIcon(f, "w-7 h-7")}
+                      </div>
+                      <span className="text-white text-sm flex-1 text-left truncate">{f.title}</span>
+                      <FaIcons.FaChevronRight className="text-gray-500 text-xs ml-2" />
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* ── Items level ── */}
+              {mobileNavLevel === "items" && (
+                <div>
+                  {(finderViewFolder
+                    ? finderViewFolder.items ?? finderViewFolder.subItem ?? []
+                    : finderItems
+                  ).map((item) => {
+                    const title = item.title ?? item.text;
+                    const thumbUrl = item.icon?.[0]?.url ?? item.image?.[0]?.url;
+                    const hasChildren = item.subItem?.length > 0;
+                    const hasNav = hasChildren || normalizeSlug(item.modalSlug);
+
+                    return (
+                      <button
+                        key={item.id || item.documentId}
+                        onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); mobileHandleItemTap(item); }}
+                        onClick={() => mobileHandleItemTap(item)}
+                        className="flex items-center w-full px-4 py-3.5 border-b border-gray-800 active:bg-gray-800/50"
+                      >
+                        <div className="w-8 h-8 flex items-center justify-center mr-3 flex-shrink-0">
+                          {thumbUrl ? (
+                            <img src={toUrl(thumbUrl)} className="w-7 h-7 object-contain" />
+                          ) : (
+                            renderItemThumb(item, "w-7 h-7")
+                          )}
+                        </div>
+                        <span className="text-white text-sm flex-1 text-left truncate">{title}</span>
+                        {hasNav && <FaIcons.FaChevronRight className="text-gray-500 text-xs ml-2" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          /* ═══ DESKTOP FINDER ═══ */
+          <div
+            className="absolute inset-0 bg-black/50 flex items-center justify-center z-30"
+            onClick={onCloseFolder}
+          >
+            <Draggable bounds="parent" nodeRef={modalRef} disabled={isFullscreen || isTouchDevice}>
+              <div
+                ref={modalRef}
+                onClick={(e) => e.stopPropagation()}
+                className={`bg-[#201e25] border border-gray-900 rounded-lg shadow-2xl ${
+                  isFullscreen ? "w-full h-full" : "md:w-2/3 md:h-2/3"
+                } flex flex-col overflow-hidden`}
+              >
+                {/* title bar */}
+                <div className="flex items-center space-x-2 h-8 px-3 bg-[#363539] border-b border-black">
+                  <button
+                    onClick={onCloseFolder}
+                    className="w-3 h-3 rounded-full bg-[#FF5F57] hover:opacity-80"
+                  />
+                  <button
+                    onClick={() => onMinimizeFolder(openFolder)}
+                    className="w-3 h-3 rounded-full bg-[#FFBD2E] hover:opacity-80"
+                  />
+                  <button
+                    onClick={onToggleFullscreen}
+                    className="w-3 h-3 rounded-full bg-[#28C93F] hover:opacity-80"
+                  />
+                  <button
+                    onClick={(e) => { e.stopPropagation(); goBack(); }}
+                    disabled={backStack.length === 0}
+                    className="disabled:opacity-50 ml-3"
+                  >
+                    <FaIcons.FaChevronLeft className="text-white" />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); goForward(); }}
+                    disabled={forwardStack.length === 0}
+                    className="disabled:opacity-50"
+                  >
+                    <FaIcons.FaChevronRight className="text-white" />
+                  </button>
+
+                  <span className="ml-2 font-medium text-white">
+                    {finderViewFolder ? finderViewFolder.title : "Finder"}
+                  </span>
+                </div>
+
+                <div className="flex flex-1">
+                  {/* sidebar */}
+                  <aside className="w-1/4 bg-[#201e25] border-r border-black overflow-y-auto">
+                    <div className="px-4 py-1 text-xs font-semibold uppercase text-gray-500">
+                      Finder
+                    </div>
+                    <div
+                      onClick={() => {
+                        onOpenFolder(finderFolder);
+                        setFinderViewFolder(null);
+                        setSelectedFolderId(null);
+                        setBackStack([]);
+                        setForwardStack([]);
+                      }}
+                      className={`flex items-center px-4 py-2 cursor-pointer ${
+                        selectedFolderId === null
+                          ? "bg-[#464746]"
+                          : "hover:bg-[#464746] bg-[#201e25]"
+                      }`}
+                    >
+                      {renderFolderIcon(finderFolder, "w-5 h-5 mr-2")}
+                      <span className="text-white">Finder</span>
+                    </div>
+                    {finderCategories.map(({ name, folders }) => (
+                      <div key={name} className="mb-4">
+                        <div className="px-4 py-1 text-xs font-semibold uppercase text-gray-500">
+                          {name}
+                        </div>
+                        {folders.map((f) => {
+                          const isActive = f.documentId === selectedFolderId;
+                          return (
+                            <div
+                              key={f.documentId}
+                              onClick={() => handleSidebarClick(f)}
+                              className={`flex items-center px-4 py-2 cursor-pointer ${
+                                isActive
+                                  ? "bg-[#464746]"
+                                  : "hover:bg-[#464746] bg-[#201e25]"
+                              }`}
+                            >
+                              {renderFolderIcon(f, "w-5 h-5 mr-2")}
+                              <span className="text-white">{f.title}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </aside>
+
+                  <main className="flex-1 p-4 overflow-y-auto">
+                    <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
+                      {(finderViewFolder
+                        ? finderViewFolder.items ?? finderViewFolder.subItem ?? []
+                        : finderItems
+                      ).map((item) => {
+                        const title = item.title ?? item.text;
+                        const thumbUrl = item.icon?.[0]?.url ?? item.image?.[0]?.url;
+
+                        if (item.url) {
+                          return (
+                            <a
+                              key={item.id || item.documentId}
+                              href={item.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex flex-col items-center p-2 hover:bg-[#464746] rounded cursor-pointer"
+                            >
+                              {thumbUrl ? (
+                                <img src={toUrl(thumbUrl)} className="w-12 h-12 object-contain" />
+                              ) : (
+                                renderFolderIcon(item, "w-12 h-12")
+                              )}
+                              <span className="mt-2 text-sm text-white text-center">{title}</span>
+                            </a>
+                          );
+                        }
+
                         return (
                           <div
-                            key={f.documentId}
-                            onTouchEnd={(e) => { e.stopPropagation(); handleSidebarClick(f); }}
-                            onClick={() => handleSidebarClick(f)}
-                            className={`flex items-center px-4 py-2 cursor-pointer ${
-                              isActive
-                                ? "bg-[#464746]"
-                                : "hover:bg-[#464746] bg-[#201e25]"
-                            }`}
+                            key={item.id || item.documentId}
+                            className="flex flex-col items-center p-2 hover:bg-[#464746] rounded cursor-pointer"
+                            onClick={() => handleGridItemClick(item, thumbUrl, title)}
                           >
-                            {renderFolderIcon(f, "w-5 h-5 mr-2")}
-                            <span className="text-white">{f.title}</span>
+                            {thumbUrl ? (
+                              <img src={toUrl(thumbUrl)} className="w-12 h-12 object-contain" />
+                            ) : (
+                              renderFolderIcon(item, "w-12 h-12")
+                            )}
+                            <span className="mt-2 text-sm text-white text-center">{title}</span>
                           </div>
                         );
                       })}
                     </div>
-                  ))}
-                </aside>
-
-                <main className="flex-1 p-4 overflow-y-auto">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                    {(normalizeSlug(openFolder?.modalSlug) === "openfolder"
-                      ? finderViewFolder
-                        ? finderViewFolder.items ??
-                          finderViewFolder.subItem ??
-                          []
-                        : finderItems
-                      : openFolder.items || []
-                    ).map((item) => {
-                      const title = item.title ?? item.text;
-                      const thumbUrl =
-                        item.icon?.[0]?.url ?? item.image?.[0]?.url;
-
-                      if (item.url) {
-                        return (
-                          <a
-                            key={item.id || item.documentId}
-                            href={item.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex flex-col items-center p-2 hover:bg-[#464746] rounded cursor-pointer"
-                          >
-                            {thumbUrl ? (
-                              <img
-                                src={toUrl(thumbUrl)}
-                                className="w-12 h-12 object-contain"
-                              />
-                            ) : (
-                              renderFolderIcon(item, "w-12 h-12")
-                            )}
-                            <span className="mt-2 text-sm text-white text-center">
-                              {title}
-                            </span>
-                          </a>
-                        );
-                      }
-
-                      return (
-                        <div
-                          key={item.id || item.documentId}
-                          className="flex flex-col items-center p-2 hover:bg-[#464746] rounded cursor-pointer"
-                          onTouchEnd={(e) => { e.stopPropagation(); handleGridItemClick(item, thumbUrl, title); }}
-                          onClick={() => handleGridItemClick(item, thumbUrl, title)}
-                        >
-                          {thumbUrl ? (
-                            <img
-                              src={toUrl(thumbUrl)}
-                              className="w-12 h-12 object-contain"
-                            />
-                          ) : (
-                            renderFolderIcon(item, "w-12 h-12")
-                          )}
-                          <span className="mt-2 text-sm text-white text-center">
-                            {title}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </main>
+                  </main>
+                </div>
               </div>
-            </div>
-          </Draggable>
-        </div>
+            </Draggable>
+          </div>
+        )
       )}
 
       {customModal &&
@@ -626,7 +802,7 @@ export default function Desktop({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-[#201e25] border border-gray-900 rounded-lg shadow-2xl w-2/3 h-2/3 flex flex-col overflow-hidden"
+            className="bg-[#201e25] border border-gray-900 rounded-lg shadow-2xl w-full h-full md:w-2/3 md:h-2/3 flex flex-col overflow-hidden"
           >
             <div className="flex items-center space-x-2 h-8 px-3 bg-[#363539] border-b border-black">
               <button

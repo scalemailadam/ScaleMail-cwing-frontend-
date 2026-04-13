@@ -62,3 +62,15 @@ summary {
 @utility transition-instant {
   transition: all 0.1s ease;
 }
+
+/* ── Mobile Finder slide transitions ──────────────────────────── */
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+@keyframes slideInLeft {
+  from { transform: translateX(-30%); opacity: 0.5; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.slide-in-right { animation: slideInRight 0.25s ease-out; }
+.slide-in-left { animation: slideInLeft 0.25s ease-out; }
