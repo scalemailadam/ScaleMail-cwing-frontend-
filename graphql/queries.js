@@ -43,6 +43,8 @@ const GET_FOLDER = gql`
     folderCategories(sort: "order:asc") {
       documentId
       name
+      reactIcon
+      reactIconColor
       desktop_folders {
         documentId
         title

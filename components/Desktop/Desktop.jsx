@@ -149,7 +149,7 @@ export default function Desktop({
     .filter((item) => item && (item.title || item.Title));
   const finderCategories = categories
     .filter((c) => c.name !== "Desktop")
-    .map((c) => ({ name: c.name, folders: c.desktop_folders }));
+    .map((c) => ({ name: c.name, folders: c.desktop_folders, reactIcon: c.reactIcon, reactIconColor: c.reactIconColor }));
 
   const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL ?? "";
   const toUrl = (u = "") => (u.startsWith("http") ? u : `${STRAPI_URL}${u}`);
@@ -541,20 +541,23 @@ export default function Desktop({
                     <FaIcons.FaChevronRight className="text-gray-500 text-xs ml-2" />
                   </button>
 
-                  {finderCategories.map(({ name, folders }) => (
-                    <button
-                      key={name}
-                      onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); mobileNavigateTo("folders", { name, folders }); }}
-                      onClick={() => mobileNavigateTo("folders", { name, folders })}
-                      className="flex items-center w-full px-4 py-3.5 border-b border-gray-800 active:bg-gray-800/50"
-                    >
-                      <div className="w-8 h-8 flex items-center justify-center mr-3 flex-shrink-0">
-                        <FaIcons.FaFolder className="w-7 h-7 text-blue-400" />
-                      </div>
-                      <span className="text-white text-sm flex-1 text-left">{name}</span>
-                      <FaIcons.FaChevronRight className="text-gray-500 text-xs ml-2" />
-                    </button>
-                  ))}
+                  {finderCategories.map(({ name, folders, reactIcon, reactIconColor }) => {
+                    const CatIcon = (reactIcon && (FaIcons[reactIcon] || IoIcons[reactIcon] || GiIcons[reactIcon] || SiIcons[reactIcon])) || FaIcons.FaFolder;
+                    return (
+                      <button
+                        key={name}
+                        onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); mobileNavigateTo("folders", { name, folders }); }}
+                        onClick={() => mobileNavigateTo("folders", { name, folders })}
+                        className="flex items-center w-full px-4 py-3.5 border-b border-gray-800 active:bg-gray-800/50"
+                      >
+                        <div className="w-8 h-8 flex items-center justify-center mr-3 flex-shrink-0">
+                          <CatIcon className="w-7 h-7" style={{ color: reactIconColor || "#7DD3FC" }} />
+                        </div>
+                        <span className="text-white text-sm flex-1 text-left">{name}</span>
+                        <FaIcons.FaChevronRight className="text-gray-500 text-xs ml-2" />
+                      </button>
+                    );
+                  })}
                 </div>
               )}
 
@@ -684,9 +687,12 @@ export default function Desktop({
                       {renderFolderIcon(finderFolder, "w-5 h-5 mr-2")}
                       <span className="text-white">Finder</span>
                     </div>
-                    {finderCategories.map(({ name, folders }) => (
+                    {finderCategories.map(({ name, folders, reactIcon, reactIconColor }) => {
+                    const CatIcon = (reactIcon && (FaIcons[reactIcon] || IoIcons[reactIcon] || GiIcons[reactIcon] || SiIcons[reactIcon])) || FaIcons.FaFolder;
+                    return (
                       <div key={name} className="mb-4">
-                        <div className="px-4 py-1 text-xs font-semibold uppercase text-gray-500">
+                        <div className="px-4 py-1 text-xs font-semibold uppercase text-gray-500 flex items-center gap-1">
+                          <CatIcon className="w-3 h-3" style={{ color: reactIconColor || "#7DD3FC" }} />
                           {name}
                         </div>
                         {folders.map((f) => {
@@ -707,7 +713,8 @@ export default function Desktop({
                           );
                         })}
                       </div>
-                    ))}
+                    );
+                  })}
                   </aside>
 
                   <main className="flex-1 p-4 overflow-y-auto">
