@@ -495,14 +495,14 @@ export default function Desktop({
             <div
               ref={modalRef}
               onClick={(e) => e.stopPropagation()}
-              className={`bg-[#201e25] border border-gray-900 rounded-lg shadow-2xl flex flex-col overflow-hidden ${
+              className={`border rounded-lg shadow-2xl flex flex-col overflow-hidden ${
                 isFullscreen
                   ? "w-full h-full rounded-none"
                   : "w-[calc(100%-1rem)] h-[calc(100%-6rem)] max-w-[500px]"
-              }`}
+              } ${isDark ? "bg-[#201e25] border-gray-900" : "bg-white border-gray-300"}`}
             >
               {/* ── Title bar with stoplights ── */}
-              <div className="title-bar flex items-center space-x-2 h-8 px-3 bg-[#363539] border-b border-black flex-shrink-0 cursor-move">
+              <div className={`title-bar flex items-center space-x-2 h-8 px-3 border-b flex-shrink-0 cursor-move ${isDark ? "bg-[#363539] border-black" : "bg-[#e8e8ed] border-gray-300"}`}>
                 <button
                   onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onCloseFolder(); }}
                   onClick={onCloseFolder}
@@ -524,7 +524,7 @@ export default function Desktop({
                   disabled={backStack.length === 0}
                   className="disabled:opacity-50 ml-2"
                 >
-                  <FaIcons.FaChevronLeft className="text-white text-xs" />
+                  <FaIcons.FaChevronLeft className={`${isDark ? "text-white" : "text-gray-800"} text-xs`} />
                 </button>
                 <button
                   onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); goForward(); }}
@@ -532,9 +532,9 @@ export default function Desktop({
                   disabled={forwardStack.length === 0}
                   className="disabled:opacity-50"
                 >
-                  <FaIcons.FaChevronRight className="text-white text-xs" />
+                  <FaIcons.FaChevronRight className={`${isDark ? "text-white" : "text-gray-800"} text-xs`} />
                 </button>
-                <span className="ml-2 font-medium text-white text-sm truncate">
+                <span className={`ml-2 font-medium text-sm truncate ${isDark ? "text-white" : "text-gray-800"}`}>
                   {finderViewFolder ? finderViewFolder.title : "Finder"}
                 </span>
                 {/* Sidebar toggle */}
@@ -557,7 +557,7 @@ export default function Desktop({
                       onClick={() => setMobileSidebarOpen(false)}
                       onTouchEnd={(e) => { e.stopPropagation(); setMobileSidebarOpen(false); }}
                     />
-                    <aside className="absolute left-0 top-0 bottom-0 w-3/5 max-w-[220px] bg-[#201e25] border-r border-black overflow-y-auto z-20 mobile-sidebar-slide-in">
+                    <aside className={`absolute left-0 top-0 bottom-0 w-3/5 max-w-[220px] border-r overflow-y-auto z-20 mobile-sidebar-slide-in ${isDark ? "bg-[#201e25] border-black" : "bg-[#f2f2f7] border-gray-300"}`}>
                       <div className="px-3 py-1 text-[10px] font-semibold uppercase text-gray-500">
                         Finder
                       </div>
@@ -579,12 +579,12 @@ export default function Desktop({
                         }}
                         className={`flex items-center px-3 py-2.5 cursor-pointer ${
                           selectedFolderId === null
-                            ? "bg-[#464746]"
-                            : "active:bg-[#464746] bg-[#201e25]"
+                            ? (isDark ? "bg-[#464746]" : "bg-gray-300")
+                            : (isDark ? "active:bg-[#464746] bg-[#201e25]" : "active:bg-gray-200 bg-transparent")
                         }`}
                       >
                         {finderFolder && renderFolderIcon(finderFolder, "w-5 h-5 mr-2")}
-                        <span className="text-white text-sm">Finder</span>
+                        <span className={`text-sm ${isDark ? "text-white" : "text-gray-800"}`}>Finder</span>
                       </div>
                       {finderCategories.map(({ name, folders, reactIcon, reactIconColor, icon }) => {
                         const CatIcon = (reactIcon && (FaIcons[reactIcon] || IoIcons[reactIcon] || GiIcons[reactIcon] || SiIcons[reactIcon])) || FaIcons.FaFolder;
@@ -613,12 +613,12 @@ export default function Desktop({
                                   }}
                                   className={`flex items-center px-3 py-2.5 cursor-pointer ${
                                     isActive
-                                      ? "bg-[#464746]"
-                                      : "active:bg-[#464746] bg-[#201e25]"
+                                      ? (isDark ? "bg-[#464746]" : "bg-gray-300")
+                                      : (isDark ? "active:bg-[#464746] bg-[#201e25]" : "active:bg-gray-200 bg-transparent")
                                   }`}
                                 >
                                   {renderFolderIcon(f, "w-5 h-5 mr-2")}
-                                  <span className="text-white text-sm truncate">{f.title}</span>
+                                  <span className={`text-sm truncate ${isDark ? "text-white" : "text-gray-800"}`}>{f.title}</span>
                                 </div>
                               );
                             })}
@@ -646,14 +646,14 @@ export default function Desktop({
                             href={item.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex flex-col items-center p-2 active:bg-[#464746] rounded cursor-pointer"
+                            className={`flex flex-col items-center p-2 rounded cursor-pointer ${isDark ? "active:bg-[#464746]" : "active:bg-gray-200"}`}
                           >
                             {thumbUrl ? (
                               <img src={toUrl(thumbUrl)} className="w-10 h-10 object-contain" />
                             ) : (
                               renderFolderIcon(item, "w-10 h-10")
                             )}
-                            <span className="mt-1 text-xs text-white text-center leading-tight">{title}</span>
+                            <span className={`mt-1 text-xs text-center leading-tight ${isDark ? "text-white" : "text-gray-800"}`}>{title}</span>
                           </a>
                         );
                       }
@@ -661,7 +661,7 @@ export default function Desktop({
                       return (
                         <div
                           key={item.id || item.documentId}
-                          className="flex flex-col items-center p-2 active:bg-[#464746] rounded cursor-pointer"
+                          className={`flex flex-col items-center p-2 rounded cursor-pointer ${isDark ? "active:bg-[#464746]" : "active:bg-gray-200"}`}
                           onTouchEnd={(e) => {
                             e.stopPropagation(); e.preventDefault();
                             handleGridItemClick(item, thumbUrl, title);
@@ -673,7 +673,7 @@ export default function Desktop({
                           ) : (
                             renderFolderIcon(item, "w-10 h-10")
                           )}
-                          <span className="mt-1 text-xs text-white text-center leading-tight">{title}</span>
+                          <span className={`mt-1 text-xs text-center leading-tight ${isDark ? "text-white" : "text-gray-800"}`}>{title}</span>
                         </div>
                       );
                     })}
@@ -803,14 +803,14 @@ export default function Desktop({
                               href={item.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex flex-col items-center p-2 hover:bg-[#464746] rounded cursor-pointer"
+                              className={`flex flex-col items-center p-2 rounded cursor-pointer ${isDark ? "hover:bg-[#464746]" : "hover:bg-gray-200"}`}
                             >
                               {thumbUrl ? (
                                 <img src={toUrl(thumbUrl)} className="w-12 h-12 object-contain" />
                               ) : (
                                 renderFolderIcon(item, "w-12 h-12")
                               )}
-                              <span className="mt-2 text-sm text-white text-center">{title}</span>
+                              <span className={`mt-2 text-sm text-center ${isDark ? "text-white" : "text-gray-800"}`}>{title}</span>
                             </a>
                           );
                         }
@@ -818,7 +818,7 @@ export default function Desktop({
                         return (
                           <div
                             key={item.id || item.documentId}
-                            className="flex flex-col items-center p-2 hover:bg-[#464746] rounded cursor-pointer"
+                            className={`flex flex-col items-center p-2 rounded cursor-pointer ${isDark ? "hover:bg-[#464746]" : "hover:bg-gray-200"}`}
                             onClick={() => handleGridItemClick(item, thumbUrl, title)}
                           >
                             {thumbUrl ? (
@@ -826,7 +826,7 @@ export default function Desktop({
                             ) : (
                               renderFolderIcon(item, "w-12 h-12")
                             )}
-                            <span className="mt-2 text-sm text-white text-center">{title}</span>
+                            <span className={`mt-2 text-sm text-center ${isDark ? "text-white" : "text-gray-800"}`}>{title}</span>
                           </div>
                         );
                       })}
