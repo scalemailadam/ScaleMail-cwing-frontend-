@@ -74,3 +74,10 @@ summary {
 }
 .slide-in-right { animation: slideInRight 0.25s ease-out; }
 .slide-in-left { animation: slideInLeft 0.25s ease-out; }
+
+/* ── Mobile Finder sidebar slide ─────────────────────────────── */
+@keyframes sidebarSlideIn {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+.mobile-sidebar-slide-in { animation: sidebarSlideIn 0.2s ease-out; }

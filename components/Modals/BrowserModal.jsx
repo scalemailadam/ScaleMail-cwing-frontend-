@@ -5,6 +5,7 @@ import Draggable from "react-draggable";
 import Image from "next/image";
 import { useQuery, gql } from "@apollo/client";
 import { GET_HEADER } from "@/graphql/queries";
+import { useTheme } from "@/context/ThemeContext";
 import { FaTimes } from "react-icons/fa";
 
 // Inline query updated to include rows and placementGallery
@@ -88,9 +89,14 @@ export default function BrowserModal({ folder, onClose, onMinimizeFolder }) {
   } = pageData.browserModal;
   const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || "";
   const toUrl = (u = "") => (u.startsWith("http") ? u : STRAPI_URL + u);
-  const logoUrl = headerData?.header?.logo?.[0]?.url
-    ? toUrl(headerData.header.logo[0].url)
-    : null;
+  const { isDark } = useTheme();
+  const logoUrl = (() => {
+    const lightUrl = headerData?.header?.logo?.[0]?.url
+      ? toUrl(headerData.header.logo[0].url) : null;
+    const darkUrl = headerData?.header?.darkLogo?.url
+      ? toUrl(headerData.header.darkLogo.url) : null;
+    return isDark ? (darkUrl || lightUrl) : lightUrl;
+  })();
 
   // Group sections by SectionGroup background
   const groupSections = () => {
@@ -235,7 +241,8 @@ export default function BrowserModal({ folder, onClose, onMinimizeFolder }) {
       {/* Title Bar */}
       <div
         className={
-          "title-bar flex items-center h-8 px-3 bg-[#363539] border-b border-black" +
+          "title-bar flex items-center h-8 px-3 border-b" +
+          (isDark ? " bg-[#363539] border-black" : " bg-[#e8e8ed] border-gray-300") +
           (full ? "" : " cursor-move")
         }
       >
@@ -254,7 +261,7 @@ export default function BrowserModal({ folder, onClose, onMinimizeFolder }) {
             className="w-3 h-3 rounded-full bg-[#28C93F]"
           />
         </div>
-        <span className="ml-2 font-medium text-white select-none">{title}</span>
+        <span className={`ml-2 font-medium select-none ${isDark ? "text-white" : "text-gray-800"}`}>{title}</span>
         {logoUrl && (
           <Image
             src={logoUrl}
@@ -295,7 +302,7 @@ export default function BrowserModal({ folder, onClose, onMinimizeFolder }) {
   return (
     <div
       onClick={onClose}
-      className="absolute inset-0 bg-black/50 flex items-center justify-center z-30"
+      className="absolute inset-0 flex items-center justify-center z-30"
     >
       {isFS ? (
         <WindowBody full />

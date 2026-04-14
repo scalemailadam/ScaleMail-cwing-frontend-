@@ -6,17 +6,22 @@ import Image from "next/image";
 import ReactMarkdown from "react-markdown";
 import { useQuery } from "@apollo/client";
 import { GET_HEADER } from "@/graphql/queries";
+import { useTheme } from "@/context/ThemeContext";
 
 export default function TextModal({ item, folder, onClose, onMinimizeFolder }) {
   const [isFS, setFS] = useState(false);
   const dragRef = useRef(null);
 
-  const { data: headerData } = useQuery(GET_HEADER);
+  const { isDark } = useTheme();
   const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || "";
   const toUrl = (u = "") => (u.startsWith("http") ? u : STRAPI_URL + u);
-  const logoUrl = headerData?.header?.logo?.[0]?.url
+  const lightLogoUrl = headerData?.header?.logo?.[0]?.url
     ? toUrl(headerData.header.logo[0].url)
     : null;
+  const darkLogoUrl = headerData?.header?.darkLogo?.url
+    ? toUrl(headerData.header.darkLogo.url)
+    : null;
+  const logoUrl = isDark ? (darkLogoUrl || lightLogoUrl) : lightLogoUrl;
 
   const data = item ?? folder;
   const title = data?.title ?? data?.Title ?? "Document";
@@ -36,7 +41,8 @@ export default function TextModal({ item, folder, onClose, onMinimizeFolder }) {
       {/* Title Bar */}
       <div
         className={
-          "title-bar flex items-center h-8 px-3 bg-[#363539] border-b border-black" +
+           "title-bar flex items-center h-8 px-3 border-b" +
+          (isDark ? " bg-[#363539] border-black" : " bg-[#e8e8ed] border-gray-300") +
           (full ? "" : " cursor-move")
         }
       >
@@ -55,7 +61,7 @@ export default function TextModal({ item, folder, onClose, onMinimizeFolder }) {
             className="w-3 h-3 rounded-full bg-[#28C93F] flex-shrink-0"
           />
         </div>
-        <span className="ml-3 font-medium text-white text-sm select-none truncate">
+        <span className={`ml-3 font-medium text-sm select-none truncate ${isDark ? "text-white" : "text-gray-800"}`}>
           {title}
         </span>
         {logoUrl && (
@@ -104,7 +110,7 @@ export default function TextModal({ item, folder, onClose, onMinimizeFolder }) {
   return (
     <div
       onClick={onClose}
-      className="absolute inset-0 bg-black/50 flex items-center justify-center z-30"
+      className="absolute inset-0 flex items-center justify-center z-30"
     >
       {isFS ? (
         <WindowBody full />

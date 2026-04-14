@@ -5,6 +5,7 @@ import Draggable from "react-draggable";
 import Image from "next/image";
 import { useQuery } from "@apollo/client";
 import { GET_HEADER } from "@/graphql/queries";
+import { useTheme } from "@/context/ThemeContext";
 import { FaChevronLeft, FaChevronRight, FaTimes } from "react-icons/fa";
 
 /**
@@ -22,9 +23,11 @@ export default function GarmentDesignModal({
 
   /* header logo from Strapi */
   const { data } = useQuery(GET_HEADER);
+  const { isDark } = useTheme();
   const logoUrl = (() => {
-    const url = data?.header?.logo?.[0]?.url;
-    return url ? toUrl(url) : null;
+    const lightUrl = data?.header?.logo?.[0]?.url ? toUrl(data.header.logo[0].url) : null;
+    const darkUrl = data?.header?.darkLogo?.url ? toUrl(data.header.darkLogo.url) : null;
+    return isDark ? (darkUrl || lightUrl) : lightUrl;
   })();
 
   /* ---------------- state ---------------- */
@@ -101,14 +104,15 @@ export default function GarmentDesignModal({
       onClick={(e) => e.stopPropagation()}
       className={
         full
-          ? "absolute left-0 right-0 top-1 bottom-22 max-w-screen bg-black/50 border border-gray-900 flex flex-col overflow-hidden z-40"
-          : "bg-black/50 border border-gray-900 rounded-lg shadow-2xl w-[900px] h-[600px] max-w-[calc(100vw-2rem)] max-h-[90vh] md:w-[70vw] md:h-[75vh] flex flex-col overflow-hidden"
+          ? `absolute left-0 right-0 top-1 bottom-22 max-w-screen border border-gray-900 flex flex-col overflow-hidden z-40 ${isDark ? "bg-[#201e25]" : "bg-white"}`
+          : `border rounded-lg shadow-2xl w-[900px] h-[600px] max-w-[calc(100vw-2rem)] max-h-[90vh] md:w-[70vw] md:h-[75vh] flex flex-col overflow-hidden ${isDark ? "bg-[#201e25] border-gray-900" : "bg-white border-gray-300"}`
       }
     >
       {/* ── title bar ─────────────────────────────── */}
       <div
         className={
-          "title-bar relative flex items-center h-8 px-3 bg-[#363539] border-b border-black" +
+          "title-bar relative flex items-center h-8 px-3 border-b" +
+          (isDark ? " bg-[#363539] border-black" : " bg-[#e8e8ed] border-gray-300") +
           (full ? "" : " cursor-move")
         }
       >
@@ -127,7 +131,7 @@ export default function GarmentDesignModal({
             className="w-3 h-3 rounded-full bg-[#28C93F]"
           />
         </div>
-        <span className="absolute left-1/2 -translate-x-1/2 font-medium text-white select-none">
+        <span className={`absolute left-1/2 -translate-x-1/2 font-medium select-none ${isDark ? "text-white" : "text-gray-800"}`}>
           Garment Designs
         </span>
         {logoUrl && (
@@ -146,7 +150,7 @@ export default function GarmentDesignModal({
       {/* ── layout: sidebar + grid ─────────────────── */}
       <div className="flex flex-1 overflow-hidden">
         {/* sidebar */}
-        <aside className="w-60 shrink-0 border-r border-black bg-[#201e25] overflow-y-auto scrollbar-hide">
+        <aside className={`w-60 shrink-0 border-r overflow-y-auto scrollbar-hide ${isDark ? "border-black bg-[#201e25]" : "border-gray-300 bg-[#f2f2f7]"}`}>
           {(folder.items ?? []).map((it) => (
             <div
               key={it.id}
@@ -300,7 +304,7 @@ export default function GarmentDesignModal({
   return (
     <div
       onClick={onClose}
-      className="absolute inset-0 bg-black/50 flex items-center justify-center z-30"
+      className="absolute inset-0 flex items-center justify-center z-30"
     >
       {loading ? (
         <div

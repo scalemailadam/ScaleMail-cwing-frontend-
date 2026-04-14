@@ -4,8 +4,11 @@ import React, { useRef, useMemo, useEffect } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useTexture } from "@react-three/drei";
 import * as THREE from "three";
+import { useTheme } from "@/context/ThemeContext";
 
 export default function ArmorBackground() {
+  const { tipColor, baseColor, strokeColor } = useTheme();
+
   return (
     <div className="fixed inset-0 -z-10 pointer-events-none">
       <Canvas camera={{ position: [0, 0, 20], fov: 50 }} dpr={[1, 1.5]}>
@@ -14,7 +17,12 @@ export default function ArmorBackground() {
         <directionalLight position={[-10, 8, 12]} intensity={1.0} />
         {/* Subtle fill from bottom-right */}
         <directionalLight position={[8, -6, 5]} intensity={0.1} />
-        <ScalesInstanced scaleSize={2} />
+        <ScalesInstanced
+          scaleSize={2}
+          tipColor={tipColor}
+          baseColor={baseColor}
+          strokeColor={strokeColor}
+        />
       </Canvas>
     </div>
   );
@@ -35,7 +43,13 @@ function makeScaleShape(w, h) {
   return shape;
 }
 
-function ScalesInstanced({ scaleSize }) {
+// Helper: parse hex color string to THREE.Color-friendly [r, g, b] in 0–1 range
+function hexToVec3(hex) {
+  const c = new THREE.Color(hex);
+  return [c.r, c.g, c.b];
+}
+
+function ScalesInstanced({ scaleSize, tipColor, baseColor, strokeColor }) {
   const faceRef = useRef();
   const strokeRef = useRef();
   const { viewport } = useThree();
@@ -80,7 +94,12 @@ function ScalesInstanced({ scaleSize }) {
     faceRef.current.geometry.setAttribute("aUvOffset", attr);
   }, [faceRef, uvOffsets]);
 
+  // Parse theme colors
+  const tipVec = useMemo(() => hexToVec3(tipColor), [tipColor]);
+  const baseVec = useMemo(() => hexToVec3(baseColor), [baseColor]);
+
   // Custom material with per-instance UV offset shader injection
+  // Recreate when theme colors change
   const faceMat = useMemo(() => {
     const mat = new THREE.MeshStandardMaterial({
       map: crackedTex,
@@ -92,6 +111,8 @@ function ScalesInstanced({ scaleSize }) {
 
     mat.onBeforeCompile = (shader) => {
       shader.uniforms.cropScale = { value: cropScale };
+      shader.uniforms.uTipColor = { value: new THREE.Vector3(...tipVec) };
+      shader.uniforms.uBaseColor = { value: new THREE.Vector3(...baseVec) };
 
       // Add instance attribute + local UV varying to vertex shader
       shader.vertexShader = shader.vertexShader.replace(
@@ -116,36 +137,35 @@ function ScalesInstanced({ scaleSize }) {
         "void main() {",
         `varying vec2 vCropUv;
          varying vec2 vLocalUv;
+         uniform vec3 uTipColor;
+         uniform vec3 uBaseColor;
          void main() {`
       );
 
-      // Layer: per-scale red gradient × cracked texture crop
-      // Gradient: #8e3232 at tip (vLocalUv.y=0) → #4a1a1a at base/hinge (vLocalUv.y=1)
-      // Central ridge: lighter in center → darker at edges
+      // Layer: per-scale gradient × cracked texture crop
       shader.fragmentShader = shader.fragmentShader.replace(
         "#include <map_fragment>",
         `#ifdef USE_MAP
-           // Steel blue gradient: bright tip → dark base
-           vec3 tipColor  = vec3(0.208, 0.333, 0.400); // #355566
-           vec3 baseColor = vec3(0.063, 0.149, 0.188); // #102630
-           vec3 scaleColor = mix(tipColor, baseColor, vLocalUv.y);
+           // Theme gradient: tip → base
+           vec3 scaleColor = mix(uTipColor, uBaseColor, vLocalUv.y);
            // Central ridge highlight
            float ridge = 1.0 - 0.15 * pow(abs(vLocalUv.x - 0.5) * 2.0, 1.5);
            scaleColor *= ridge;
            // Cracked texture crop
            vec4 crackedColor = texture2D(map, vCropUv);
-           // Layer: red gradient underneath, cracked texture on top
+           // Layer: gradient underneath, cracked texture on top
            diffuseColor.rgb = scaleColor * crackedColor.rgb;
          #endif`
       );
     };
 
     return mat;
-  }, [crackedTex]);
+  }, [crackedTex, tipVec, baseVec]);
 
+  // Update stroke color reactively
   const strokeMat = useMemo(
-    () => new THREE.MeshBasicMaterial({ color: 0x2a0e0e, side: THREE.DoubleSide }),
-    []
+    () => new THREE.MeshBasicMaterial({ color: new THREE.Color(strokeColor), side: THREE.DoubleSide }),
+    [strokeColor]
   );
 
   // Grid positions + row indices

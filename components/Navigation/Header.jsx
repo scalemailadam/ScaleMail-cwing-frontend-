@@ -7,6 +7,7 @@ import { FaXTwitter } from "react-icons/fa6"; // FontAwesome 6 “X / Twitter”
 import Image from "next/image";
 import { useQuery } from "@apollo/client";
 import { GET_HEADER } from "@/graphql/queries";
+import { useTheme } from "@/context/ThemeContext";
 import NavMenu from "./NavMenu";
 
 const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL ?? "";
@@ -46,8 +47,12 @@ export default function Header({ onMenuItemClick }) {
       <p className="text-red-500">Failed to load header: {error.message}</p>
     );
 
-  const { logo, menus = [], socialLinks = [] } = data?.header ?? {};
-  const logoUrl = getLogoUrl(logo);
+  const { logo, darkLogo, menus = [], socialLinks = [] } = data?.header ?? {};
+  const lightLogoUrl = getLogoUrl(logo);
+  const darkLogoUrl = darkLogo?.url ? (darkLogo.url.startsWith("http") ? darkLogo.url : `${STRAPI_URL}${darkLogo.url}`) : null;
+
+  const { isDark } = useTheme();
+  const logoUrl = isDark ? (darkLogoUrl || lightLogoUrl) : lightLogoUrl;
 
   // choose the right icon for each social link
   const getSocialIcon = (iconName) => {
@@ -59,7 +64,9 @@ export default function Header({ onMenuItemClick }) {
   };
 
   return (
-    <nav className="font-sfpro text-sm flex items-center justify-between px-4 lg:py-0 py-2 bg-gray-400/45 z-50">
+    <nav className={`font-sfpro text-sm flex items-center justify-between px-4 lg:py-0 py-2 z-50 ${
+      isDark ? "bg-gray-400/45" : "bg-white/80 backdrop-blur-md border-b border-gray-200"
+    }`}>
       {/* left side: logo + (desktop‐only menus) */}
       <div className="flex items-center space-x-4">
         {logoUrl && (
@@ -93,13 +100,13 @@ export default function Header({ onMenuItemClick }) {
                 rel="noopener noreferrer"
                 className="hover:text-white"
               >
-                <Icon className="w-5 h-5 text-white" />
+                <Icon className={`w-5 h-5 ${isDark ? "text-white" : "text-gray-700"}`} />
               </a>
             );
           })}
         </div>
         {/* clock stays visible on all breakpoints */}
-        <div className="flex items-center space-x-1 text-sm text-white">
+        <div className={`flex items-center space-x-1 text-sm ${isDark ? "text-white" : "text-gray-800"}`}>
           <span>{formatDateTime(now)}</span>
         </div>
       </div>

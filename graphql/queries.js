@@ -22,6 +22,9 @@ const GET_HEADER = gql`
       logo {
         url
       }
+      darkLogo {
+        url
+      }
       menus {
         label
         items {
@@ -200,4 +203,32 @@ const GET_PRODUCT = gql`
   }
 `;
 
-export { GET_HEADER, GET_DOCK, GET_FOLDER, GET_BROWSER_MODAL, GET_PRODUCTS, GET_PRODUCT };
+const GET_SYSTEM_SETTINGS = gql`
+  query GetSystemSettings {
+    systemSettings {
+      profileName
+      profileSubtitle
+      about
+      profileImage {
+        url
+      }
+      sidebarItems {
+        id
+        label
+        reactIcon
+        slug
+      }
+      backgroundOptions {
+        id
+        label
+        themeKey
+        tipColor
+        baseColor
+        strokeColor
+        previewColor
+      }
+    }
+  }
+`;
+
+export { GET_HEADER, GET_DOCK, GET_FOLDER, GET_BROWSER_MODAL, GET_PRODUCTS, GET_PRODUCT, GET_SYSTEM_SETTINGS };
