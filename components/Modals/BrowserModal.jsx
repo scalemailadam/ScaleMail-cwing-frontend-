@@ -248,17 +248,22 @@ export default function BrowserModal({ folder, onClose, onMinimizeFolder }) {
       >
         <div className="flex items-center space-x-2">
           <button
+            onMouseDown={(e) => e.stopPropagation()}
             onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onClose(); }}
             onClick={onClose}
-            className="w-3 h-3 rounded-full bg-[#FF5F57] flex-shrink-0"
+            className="w-5 h-5 md:w-3 md:h-3 rounded-full bg-[#FF5F57] flex-shrink-0"
           />
           <button
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onMinimizeFolder(folder); }}
             onClick={() => onMinimizeFolder(folder)}
-            className="w-3 h-3 rounded-full bg-[#FFBD2E]"
+            className="w-5 h-5 md:w-3 md:h-3 rounded-full bg-[#FFBD2E] flex-shrink-0"
           />
           <button
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); setFS(!isFS); }}
             onClick={() => setFS(!isFS)}
-            className="w-3 h-3 rounded-full bg-[#28C93F]"
+            className="w-5 h-5 md:w-3 md:h-3 rounded-full bg-[#28C93F] flex-shrink-0"
           />
         </div>
         <span className={`ml-2 font-medium select-none ${isDark ? "text-white" : "text-gray-800"}`}>{title}</span>
