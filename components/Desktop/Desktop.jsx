@@ -866,7 +866,7 @@ export default function Desktop({
             >
               <div
                 onClick={(e) => e.stopPropagation()}
-                className={`border rounded-lg p-6 ${isDark ? \"bg-[#201e25] border-gray-900 text-white\" : \"bg-white border-gray-300 text-gray-800\"}`}
+                className={`border rounded-lg p-6 ${isDark ? "bg-[#201e25] border-gray-900 text-white" : "bg-white border-gray-300 text-gray-800"}`}
               >
                 <p>
                   🚧 No modal defined for <code>{customModal.modalSlug}</code>{" "}
