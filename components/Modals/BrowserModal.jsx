@@ -263,14 +263,7 @@ export default function BrowserModal({ folder, onClose, onMinimizeFolder }) {
         </div>
         <span className={`ml-2 font-medium select-none ${isDark ? "text-white" : "text-gray-800"}`}>{title}</span>
         {logoUrl && (
-          <Image
-            src={logoUrl}
-            alt="logo"
-            width={120}
-            height={24}
-            unoptimized
-            className="ml-auto object-contain h-6"
-          />
+          <img src={logoUrl} alt="logo" className="ml-auto object-contain h-6" />
         )}
       </div>
       {/* URL Bar */}

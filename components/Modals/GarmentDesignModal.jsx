@@ -135,15 +135,7 @@ export default function GarmentDesignModal({
           Garment Designs
         </span>
         {logoUrl && (
-          <Image
-            src={logoUrl}
-            alt="logo"
-            width={160}
-            height={30}
-            priority
-            unoptimized
-            className="ml-auto object-contain h-6 md:h-8"
-          />
+          <img src={logoUrl} alt="logo" className="ml-auto object-contain h-6 md:h-8" />
         )}
       </div>
 

@@ -134,8 +134,9 @@ export default function SystemSettingsModal({ folder, onClose, onMinimizeFolder 
 
       {/* Logo section — full width, not rounded */}
       <button
+        onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); setActiveSlug("profile"); if (isMobile) setMobileSidebarOpen(false); }}
         onClick={() => { setActiveSlug("profile"); if (isMobile) setMobileSidebarOpen(false); }}
-        className={`flex items-center justify-center mx-2 px-2 py-3 rounded-lg mb-1 ${
+        className={`flex items-center justify-center mx-2 px-2 py-4 rounded-lg mb-1 ${
           activeSlug === "profile" ? activeBg : hoverBg
         }`}
       >
@@ -143,11 +144,11 @@ export default function SystemSettingsModal({ folder, onClose, onMinimizeFolder 
           <img
             src={logoUrl}
             alt="Logo"
-            className="h-8 object-contain"
+            className="h-10 object-contain"
           />
         ) : (
-          <div className="h-8 flex items-center justify-center">
-            <FaIcons.FaCog className={`text-xl ${textSecondary}`} />
+          <div className="h-10 flex items-center justify-center">
+            <FaIcons.FaCog className={`text-2xl ${textSecondary}`} />
           </div>
         )}
       </button>
@@ -165,13 +166,14 @@ export default function SystemSettingsModal({ folder, onClose, onMinimizeFolder 
           return (
             <button
               key={item.id}
+              onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); setActiveSlug(item.slug); if (isMobile) setMobileSidebarOpen(false); }}
               onClick={() => { setActiveSlug(item.slug); if (isMobile) setMobileSidebarOpen(false); }}
-              className={`flex items-center gap-2.5 w-full px-3 py-1.5 rounded-lg text-left mb-0.5 transition-colors ${
+              className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-left mb-0.5 transition-colors ${
                 isActive ? activeBg : hoverBg
               }`}
             >
-              <Icon className="text-sm flex-shrink-0" style={{ color: isActive ? "#0a84ff" : (isDark ? "#999" : "#666") }} />
-              <span className={`text-sm ${isActive ? textPrimary : textMuted}`}>
+              <Icon className="text-base flex-shrink-0" style={{ color: isActive ? "#0a84ff" : (isDark ? "#999" : "#666") }} />
+              <span className={`text-base ${isActive ? textPrimary : textMuted}`}>
                 {item.label}
               </span>
             </button>
@@ -414,10 +416,11 @@ export default function SystemSettingsModal({ folder, onClose, onMinimizeFolder 
         <span className={`ml-3 font-medium text-sm select-none ${textPrimary}`}>{pageTitle}</span>
         {isMobile && (
           <button
+            onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); setMobileSidebarOpen((o) => !o); }}
             onClick={() => setMobileSidebarOpen((o) => !o)}
-            className={`ml-auto ${textSecondary}`}
+            className={`ml-auto p-1 ${textSecondary}`}
           >
-            <FaIcons.FaBars className="text-sm" />
+            <FaIcons.FaBars className="text-lg" />
           </button>
         )}
       </div>

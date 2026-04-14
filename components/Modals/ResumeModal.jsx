@@ -106,15 +106,7 @@ export default function ResumeModal({ folder, onClose, onMinimizeFolder }) {
           {folder.title.replace(".exe", "")}
         </span>
         {logoUrl && (
-          <Image
-            src={logoUrl}
-            alt="logo"
-            width={140}
-            height={28}
-            priority
-            unoptimized
-            className="ml-auto object-contain h-6"
-          />
+          <img src={logoUrl} alt="logo" className="ml-auto object-contain h-6" />
         )}
       </div>
       {/* toolbar: page nav + download */}

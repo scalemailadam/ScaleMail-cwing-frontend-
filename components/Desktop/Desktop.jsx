@@ -491,7 +491,9 @@ export default function Desktop({
             className="absolute inset-0 flex items-center justify-center z-30"
             onClick={onCloseFolder}
           >
+            <Draggable handle=".title-bar" bounds="parent" nodeRef={modalRef} disabled={isFullscreen}>
             <div
+              ref={modalRef}
               onClick={(e) => e.stopPropagation()}
               className={`bg-[#201e25] border border-gray-900 rounded-lg shadow-2xl flex flex-col overflow-hidden ${
                 isFullscreen
@@ -500,7 +502,7 @@ export default function Desktop({
               }`}
             >
               {/* ── Title bar with stoplights ── */}
-              <div className="flex items-center space-x-2 h-8 px-3 bg-[#363539] border-b border-black flex-shrink-0">
+              <div className="title-bar flex items-center space-x-2 h-8 px-3 bg-[#363539] border-b border-black flex-shrink-0 cursor-move">
                 <button
                   onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onCloseFolder(); }}
                   onClick={onCloseFolder}
@@ -575,14 +577,14 @@ export default function Desktop({
                           setBackStack([]); setForwardStack([]);
                           setMobileSidebarOpen(false);
                         }}
-                        className={`flex items-center px-3 py-1.5 cursor-pointer ${
+                        className={`flex items-center px-3 py-2.5 cursor-pointer ${
                           selectedFolderId === null
                             ? "bg-[#464746]"
                             : "active:bg-[#464746] bg-[#201e25]"
                         }`}
                       >
-                        {finderFolder && renderFolderIcon(finderFolder, "w-4 h-4 mr-2")}
-                        <span className="text-white text-xs">Finder</span>
+                        {finderFolder && renderFolderIcon(finderFolder, "w-5 h-5 mr-2")}
+                        <span className="text-white text-sm">Finder</span>
                       </div>
                       {finderCategories.map(({ name, folders, reactIcon, reactIconColor, icon }) => {
                         const CatIcon = (reactIcon && (FaIcons[reactIcon] || IoIcons[reactIcon] || GiIcons[reactIcon] || SiIcons[reactIcon])) || FaIcons.FaFolder;
@@ -609,14 +611,14 @@ export default function Desktop({
                                     handleSidebarClick(f);
                                     setMobileSidebarOpen(false);
                                   }}
-                                  className={`flex items-center px-3 py-1.5 cursor-pointer ${
+                                  className={`flex items-center px-3 py-2.5 cursor-pointer ${
                                     isActive
                                       ? "bg-[#464746]"
                                       : "active:bg-[#464746] bg-[#201e25]"
                                   }`}
                                 >
-                                  {renderFolderIcon(f, "w-4 h-4 mr-2")}
-                                  <span className="text-white text-xs truncate">{f.title}</span>
+                                  {renderFolderIcon(f, "w-5 h-5 mr-2")}
+                                  <span className="text-white text-sm truncate">{f.title}</span>
                                 </div>
                               );
                             })}
@@ -679,6 +681,7 @@ export default function Desktop({
                 </main>
               </div>
             </div>
+            </Draggable>
           </div>
         ) : (
           /* ═══ DESKTOP FINDER ═══ */

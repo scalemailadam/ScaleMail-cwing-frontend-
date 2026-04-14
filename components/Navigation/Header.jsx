@@ -70,13 +70,10 @@ export default function Header({ onMenuItemClick }) {
       {/* left side: logo + (desktop‐only menus) */}
       <div className="flex items-center space-x-4">
         {logoUrl && (
-          <Image
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
             src={logoUrl}
             alt="Company logo"
-            width={160}
-            height={30}
-            unoptimized
-            priority
             className="object-contain h-6 md:h-8"
           />
         )}

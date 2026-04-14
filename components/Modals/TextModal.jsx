@@ -66,14 +66,7 @@ export default function TextModal({ item, folder, onClose, onMinimizeFolder }) {
           {title}
         </span>
         {logoUrl && (
-          <Image
-            src={logoUrl}
-            alt="logo"
-            width={120}
-            height={24}
-            unoptimized
-            className="ml-auto object-contain h-6 flex-shrink-0"
-          />
+          <img src={logoUrl} alt="logo" className="ml-auto object-contain h-6 flex-shrink-0" />
         )}
       </div>
 
