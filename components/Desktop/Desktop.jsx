@@ -686,7 +686,7 @@ export default function Desktop({
             className="absolute inset-0 flex items-center justify-center z-30"
             onClick={onCloseFolder}
           >
-            <Draggable handle=".title-bar" bounds="parent" nodeRef={modalRef} disabled={isFullscreen || isTouchDevice}>
+            <Draggable handle=".title-bar" bounds="parent" nodeRef={modalRef} disabled={isFullscreen}>
               <div
                 ref={modalRef}
                 onClick={(e) => e.stopPropagation()}

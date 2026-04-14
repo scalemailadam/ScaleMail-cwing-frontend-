@@ -12,6 +12,7 @@ export default function TextModal({ item, folder, onClose, onMinimizeFolder }) {
   const [isFS, setFS] = useState(false);
   const dragRef = useRef(null);
 
+  const { data: headerData } = useQuery(GET_HEADER);
   const { isDark } = useTheme();
   const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || "";
   const toUrl = (u = "") => (u.startsWith("http") ? u : STRAPI_URL + u);
