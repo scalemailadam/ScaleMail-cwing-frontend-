@@ -504,19 +504,22 @@ export default function Desktop({
               {/* ── Title bar with stoplights ── */}
               <div className={`title-bar flex items-center space-x-2 h-8 px-3 border-b flex-shrink-0 cursor-move ${isDark ? "bg-[#363539] border-black" : "bg-[#e8e8ed] border-gray-300"}`}>
                 <button
+                  onMouseDown={(e) => e.stopPropagation()}
                   onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onCloseFolder(); }}
                   onClick={onCloseFolder}
-                  className="w-3 h-3 rounded-full bg-[#FF5F57] flex-shrink-0"
+                  className="w-5 h-5 rounded-full bg-[#FF5F57] flex-shrink-0"
                 />
                 <button
+                  onMouseDown={(e) => e.stopPropagation()}
                   onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onMinimizeFolder(openFolder); }}
                   onClick={() => onMinimizeFolder(openFolder)}
-                  className="w-3 h-3 rounded-full bg-[#FFBD2E] flex-shrink-0"
+                  className="w-5 h-5 rounded-full bg-[#FFBD2E] flex-shrink-0"
                 />
                 <button
+                  onMouseDown={(e) => e.stopPropagation()}
                   onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onToggleFullscreen(); }}
                   onClick={onToggleFullscreen}
-                  className="w-3 h-3 rounded-full bg-[#28C93F] flex-shrink-0"
+                  className="w-5 h-5 rounded-full bg-[#28C93F] flex-shrink-0"
                 />
                 <button
                   onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); goBack(); }}
@@ -700,14 +703,17 @@ export default function Desktop({
                 {/* title bar */}
                 <div className={`title-bar flex items-center space-x-2 h-8 px-3 border-b cursor-move ${isDark ? "bg-[#363539] border-black" : "bg-[#e8e8ed] border-gray-300"}`}>
                   <button
+                    onMouseDown={(e) => e.stopPropagation()}
                     onClick={onCloseFolder}
                     className="w-3 h-3 rounded-full bg-[#FF5F57] hover:opacity-80"
                   />
                   <button
+                    onMouseDown={(e) => e.stopPropagation()}
                     onClick={() => onMinimizeFolder(openFolder)}
                     className="w-3 h-3 rounded-full bg-[#FFBD2E] hover:opacity-80"
                   />
                   <button
+                    onMouseDown={(e) => e.stopPropagation()}
                     onClick={onToggleFullscreen}
                     className="w-3 h-3 rounded-full bg-[#28C93F] hover:opacity-80"
                   />
