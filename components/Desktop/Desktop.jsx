@@ -779,12 +779,12 @@ export default function Desktop({
                               onClick={() => handleSidebarClick(f)}
                               className={`flex items-center px-4 py-2 cursor-pointer ${
                                 isActive
-                                  ? "bg-[#464746]"
-                                  : "hover:bg-[#464746] bg-[#201e25]"
+                                  ? (isDark ? "bg-[#464746]" : "bg-gray-300")
+                                  : (isDark ? "hover:bg-[#464746] bg-[#201e25]" : "hover:bg-gray-200 bg-transparent")
                               }`}
                             >
                               {renderFolderIcon(f, "w-5 h-5 mr-2")}
-                              <span className="text-white">{f.title}</span>
+                              <span className={isDark ? "text-white" : "text-gray-800"}>{f.title}</span>
                             </div>
                           );
                         })}
@@ -866,7 +866,7 @@ export default function Desktop({
             >
               <div
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#201e25] border border-gray-900 rounded-lg p-6 text-white"
+                className={`border rounded-lg p-6 ${isDark ? \"bg-[#201e25] border-gray-900 text-white\" : \"bg-white border-gray-300 text-gray-800\"}`}
               >
                 <p>
                   🚧 No modal defined for <code>{customModal.modalSlug}</code>{" "}
@@ -885,14 +885,14 @@ export default function Desktop({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-[#201e25] border border-gray-900 rounded-lg shadow-2xl w-full h-full md:w-2/3 md:h-2/3 flex flex-col overflow-hidden"
+            className={`border rounded-lg shadow-2xl w-full h-full md:w-2/3 md:h-2/3 flex flex-col overflow-hidden ${isDark ? "bg-[#201e25] border-gray-900" : "bg-white border-gray-300"}`}
           >
-            <div className="flex items-center space-x-2 h-8 px-3 bg-[#363539] border-b border-black">
+            <div className={`flex items-center space-x-2 h-8 px-3 border-b ${isDark ? "bg-[#363539] border-black" : "bg-[#e8e8ed] border-gray-300"}`}>
               <button
                 onClick={() => setOpenImageFolder(null)}
                 className="w-3 h-3 rounded-full bg-[#FF5F57] hover:opacity-80"
               />
-              <span className="ml-2 font-medium text-white">
+              <span className={`ml-2 font-medium ${isDark ? "text-white" : "text-gray-800"}`}>
                 {openImageFolder.title}
               </span>
             </div>
@@ -912,7 +912,7 @@ export default function Desktop({
                           title: sub.text,
                         })
                       }
-                      className="flex flex-col items-center p-2 hover:bg-[#464746] rounded cursor-pointer"
+                      className={`flex flex-col items-center p-2 rounded cursor-pointer ${isDark ? "hover:bg-[#464746]" : "hover:bg-gray-200"}`}
                     >
                       {firstImg ? (
                         <img
@@ -922,7 +922,7 @@ export default function Desktop({
                       ) : (
                         <FaIcons.FaRegFile className="w-12 h-12" />
                       )}
-                      <span className="mt-2 text-sm text-white text-center">
+                      <span className={`mt-2 text-sm text-center ${isDark ? "text-white" : "text-gray-800"}`}>
                         {sub.text}
                       </span>
                     </div>
@@ -937,18 +937,18 @@ export default function Desktop({
       {/* ——— full‑screen picture viewer ——— */}
       {openPicture && (
         <div
-          className="absolute left-0 right-0 top-1 bottom-22 max-w-screen bg-[#201e25] border border-gray-900 flex flex-col overflow-hidden z-50"
+          className={`absolute left-0 right-0 top-1 bottom-22 max-w-screen border flex flex-col overflow-hidden z-50 ${isDark ? "bg-[#201e25] border-gray-900" : "bg-white border-gray-300"}`}
           onClick={() => setOpenPicture(null)}
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="flex items-center space-x-2 h-8 px-3 bg-[#363539] border-b border-black"
+            className={`flex items-center space-x-2 h-8 px-3 border-b ${isDark ? "bg-[#363539] border-black" : "bg-[#e8e8ed] border-gray-300"}`}
           >
             <button
               onClick={() => setOpenPicture(null)}
               className="w-3 h-3 rounded-full bg-[#FF5F57] hover:opacity-80"
             />
-            <span className="ml-2 font-medium text-white">
+            <span className={`ml-2 font-medium ${isDark ? "text-white" : "text-gray-800"}`}>
               {openPicture.title}
             </span>
           </div>
