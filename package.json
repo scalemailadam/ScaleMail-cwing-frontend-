@@ -21,6 +21,8 @@
     "next": "16.1.0",
     "npm": "^11.3.0",
     "pdfjs-dist": "^5.1.91",
+    "phaser": "^4.0.0",
+    "re-resizable": "^6.11.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-draggable": "^4.4.5",

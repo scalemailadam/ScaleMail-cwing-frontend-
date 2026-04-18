@@ -24,9 +24,9 @@ const ThemeContext = createContext({
 export function ThemeProvider({ children }) {
   const [themeKey, setThemeKey] = useState("dark-blue");
   const [colors, setColors] = useState(DEFAULT_THEMES["dark-blue"]);
-  const [colorMode, setColorModeState] = useState("dark");
+  const colorMode = "light";
+  const isDark = false;
 
-  // Hydrate from localStorage on mount
   useEffect(() => {
     try {
       const saved = localStorage.getItem("scalemail-theme");
@@ -34,41 +34,22 @@ export function ThemeProvider({ children }) {
         const parsed = JSON.parse(saved);
         if (parsed.themeKey && parsed.tipColor) {
           setThemeKey(parsed.themeKey);
-          setColors({
-            tipColor: parsed.tipColor,
-            baseColor: parsed.baseColor,
-            strokeColor: parsed.strokeColor,
-          });
-        }
-        if (parsed.colorMode) {
-          setColorModeState(parsed.colorMode);
+          setColors({ tipColor: parsed.tipColor, baseColor: parsed.baseColor, strokeColor: parsed.strokeColor });
         }
       }
     } catch {}
   }, []);
 
-  const persistAll = (key, c, mode) => {
-    try {
-      localStorage.setItem(
-        "scalemail-theme",
-        JSON.stringify({ themeKey: key, ...c, colorMode: mode })
-      );
-    } catch {}
-  };
-
   const setTheme = (key, themeColors) => {
     const c = themeColors || DEFAULT_THEMES[key] || DEFAULT_THEMES["dark-blue"];
     setThemeKey(key);
     setColors(c);
-    persistAll(key, c, colorMode);
+    try {
+      localStorage.setItem("scalemail-theme", JSON.stringify({ themeKey: key, ...c }));
+    } catch {}
   };
 
-  const setColorMode = (mode) => {
-    setColorModeState(mode);
-    persistAll(themeKey, colors, mode);
-  };
-
-  const isDark = colorMode === "dark";
+  const setColorMode = () => {};
 
   return (
     <ThemeContext.Provider

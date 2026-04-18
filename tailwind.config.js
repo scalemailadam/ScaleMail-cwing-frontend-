@@ -9,17 +9,8 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sfpro: ['"SF Pro Display"', "sans-serif"],
-        sans: [
-          '"SF Pro Display"',
-          '"SF Pro Text"',
-          "ui-sans-serif",
-          "system-ui",
-          "-apple-system",
-          "BlinkMacSystemFont",
-          '"Helvetica Neue"',
-          "sans-serif",
-        ],
+        sans:  ['"MagicCards"', "serif"],
+        serif: ['"MagicCards"', "serif"],
       },
     },
   },

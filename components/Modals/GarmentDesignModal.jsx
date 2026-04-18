@@ -2,372 +2,226 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Draggable from "react-draggable";
+import { Resizable } from "re-resizable";
 import Image from "next/image";
 import { useQuery } from "@apollo/client";
 import { GET_HEADER } from "@/graphql/queries";
 import { useTheme } from "@/context/ThemeContext";
-import { FaChevronLeft, FaChevronRight, FaTimes } from "react-icons/fa";
+import { FaChevronLeft, FaChevronRight, FaTimes, FaMinus, FaExpand, FaCompress } from "react-icons/fa";
 
-/**
- * GarmentDesignModal – macOS-style window that displays folders of designs.
- * Sidebar = folder.items • Grid = subItem images • Lightbox only over grid.
- */
-export default function GarmentDesignModal({
-  folder,
-  onClose,
-  onMinimizeFolder,
-}) {
-  /* ---------------- helpers ---------------- */
+const MW = {
+  frame:     "#c8a030",
+  frameDark: "#a07820",
+  content:   "#060604",
+  gold:      "#1e1808",
+  goldDim:   "#0e0c04",
+  cream:     "#d4c880",
+  tan:       "#b8a868",
+  tanDim:    "#8a7848",
+  goldText:  "#c8be78",
+  muted:     "#504828",
+};
+const stoneNoise = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.35' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.9'/%3E%3C%2Fsvg%3E")`;
+const CORNERS_ONLY = { top: false, right: false, bottom: false, left: false, topRight: true, bottomRight: true, bottomLeft: true, topLeft: true };
+const iconStyle = { display: "block", width: "55%", height: "55%" };
+
+export default function GarmentDesignModal({ folder, onClose, onMinimizeFolder }) {
   const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL ?? "";
   const toUrl = (u = "") => (u.startsWith("http") ? u : `${STRAPI_URL}${u}`);
 
-  /* header logo from Strapi */
   const { data } = useQuery(GET_HEADER);
   const { isDark } = useTheme();
   const logoUrl = (() => {
     const lightUrl = data?.header?.logo?.[0]?.url ? toUrl(data.header.logo[0].url) : null;
-    const darkUrl = data?.header?.darkLogo?.url ? toUrl(data.header.darkLogo.url) : null;
+    const darkUrl  = data?.header?.darkLogo?.url  ? toUrl(data.header.darkLogo.url)  : null;
     return isDark ? (darkUrl || lightUrl) : lightUrl;
   })();
 
-  /* ---------------- state ---------------- */
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
   const [isFS, setFS] = useState(false);
-  const [active, setActive] = useState(null); // clicked folder.item
-  const [expandedIdx, setExpandedIdx] = useState(null); // light-box index
+  const [active, setActive] = useState(null);
+  const [expandedIdx, setExpandedIdx] = useState(null);
+  const [size, setSize] = useState(() => ({
+    width:  typeof window !== "undefined" ? Math.min(900, window.innerWidth - 32) : 900,
+    height: typeof window !== "undefined" ? Math.min(600, window.innerHeight - 100) : 600,
+  }));
   const dragRef = useRef(null);
+  const isResizingRef = useRef(false);
 
-  /* fake splash loader once per folder */
-  useEffect(() => {
-    // reset whenever this modal gets a new folder
-    setLoading(true);
-    setProgress(0);
-    setActive(null);
-    setExpandedIdx(null);
-  }, [folder.documentId]);
+  useEffect(() => { setLoading(true); setProgress(0); setActive(null); setExpandedIdx(null); }, [folder.documentId]);
 
   useEffect(() => {
     if (!loading) return;
     const id = setInterval(() => {
-      setProgress((p) => {
-        if (p >= 100) {
-          clearInterval(id);
-          setLoading(false);
-          return 100;
-        }
-        return p + 2;
-      });
+      setProgress((p) => { if (p >= 100) { clearInterval(id); setLoading(false); return 100; } return p + 2; });
     }, 100);
     return () => clearInterval(id);
   }, [loading]);
 
-  /* lock page scroll while modal is mounted */
   useEffect(() => {
     const { style } = document.body;
     const prev = style.overflow;
     style.overflow = "hidden";
-    return () => {
-      style.overflow = prev;
-    };
+    return () => { style.overflow = prev; };
   }, []);
 
-  /* derive images from active subItem list */
   const imageEntries = (active?.subItem || []).flatMap((s) =>
-    (s.contentItems?.image || []).map((img) => ({
-      src: toUrl(img.url),
-      text: s?.text ?? "",
-    }))
+    (s.contentItems?.image || []).map((img) => ({ src: toUrl(img.url), text: s?.text ?? "" }))
   );
   const images = imageEntries.map((e) => e.src);
 
-  /* keyboard nav inside light-box */
   useEffect(() => {
     if (expandedIdx === null) return;
     const onKey = (e) => {
-      if (e.key === "ArrowLeft") prev();
-      else if (e.key === "ArrowRight") next();
-      else if (e.key === "Escape") closeExpanded();
+      if (e.key === "ArrowLeft") setExpandedIdx((i) => (i - 1 + images.length) % images.length);
+      else if (e.key === "ArrowRight") setExpandedIdx((i) => (i + 1) % images.length);
+      else if (e.key === "Escape") setExpandedIdx(null);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [expandedIdx, images]);
 
-  const closeExpanded = () => setExpandedIdx(null);
-  const prev = () =>
-    setExpandedIdx((i) => (i - 1 + images.length) % images.length);
-  const next = () => setExpandedIdx((i) => (i + 1) % images.length);
-
-  /* ---------------- render helpers ---------------- */
   const WindowBody = ({ full }) => (
     <div
       onClick={(e) => e.stopPropagation()}
-      className={
-        full
-          ? `absolute left-0 right-0 top-1 bottom-22 max-w-screen border border-gray-900 flex flex-col overflow-hidden z-40 ${isDark ? "bg-[#201e25]" : "bg-white"}`
-          : `border rounded-lg shadow-2xl w-[900px] h-[600px] max-w-[calc(100vw-2rem)] max-h-[90vh] md:w-[70vw] md:h-[75vh] flex flex-col overflow-hidden ${isDark ? "bg-[#201e25] border-gray-900" : "bg-white border-gray-300"}`
-      }
+      className="w-full h-full flex flex-col"
+      style={{
+        padding: full ? 0 : "5px",
+        backgroundColor: MW.frame,
+        backgroundImage: stoneNoise,
+        border: full ? "none" : `1px solid ${MW.gold}`,
+        boxShadow: full ? "none" : `0 0 0 1px ${MW.goldDim}, 0 24px 72px rgba(0,0,0,0.95)`,
+      }}
     >
-      {/* ── title bar ─────────────────────────────── */}
-      <div
-        className={
-          "title-bar relative flex items-center h-8 px-3 border-b" +
-          (isDark ? " bg-[#363539] border-black" : " bg-[#e8e8ed] border-gray-300") +
-          (full ? "" : " cursor-move")
-        }
-      >
-        <div className="flex items-center space-x-2">
-          <button
-            onMouseDown={(e) => e.stopPropagation()}
-            onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onClose(); }}
-            onClick={onClose}
-            className="w-5 h-5 md:w-3 md:h-3 rounded-full bg-[#FF5F57] flex-shrink-0"
-          />
-          <button
-            onMouseDown={(e) => e.stopPropagation()}
-            onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onMinimizeFolder(folder); }}
-            onClick={() => onMinimizeFolder(folder)}
-            className="w-5 h-5 md:w-3 md:h-3 rounded-full bg-[#FFBD2E] flex-shrink-0"
-          />
-          <button
-            onMouseDown={(e) => e.stopPropagation()}
-            onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); setFS(!isFS); }}
-            onClick={() => setFS(!isFS)}
-            className="w-5 h-5 md:w-3 md:h-3 rounded-full bg-[#28C93F] flex-shrink-0"
-          />
-        </div>
-        <span className={`absolute left-1/2 -translate-x-1/2 font-medium select-none ${isDark ? "text-white" : "text-gray-800"}`}>
-          Garment Designs
-        </span>
-        {logoUrl && (
-          <img src={logoUrl} alt="logo" className="ml-auto object-contain h-6 md:h-8" />
-        )}
-      </div>
-
-      {/* ── layout: sidebar + grid ─────────────────── */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* sidebar */}
-        <aside className={`w-60 shrink-0 border-r overflow-y-auto scrollbar-hide ${isDark ? "border-black bg-[#201e25]" : "border-gray-300 bg-[#f2f2f7]"}`}>
-          {(folder.items ?? []).map((it) => (
-            <div
-              key={it.id}
-              onClick={() => {
-                setActive(it);
-                setExpandedIdx(null);
-              }}
-              className={`flex items-center space-x-3 px-3 py-6 cursor-pointer ${
-                active?.id === it.id
-                  ? "bg-[#464746]"
-                  : "hover:bg-[#464746] bg-[#201e25]"
-              }`}
-            >
-              {it.icon?.[0]?.url ? (
-                <img
-                  src={toUrl(it.icon[0].url)}
-                  alt={it.title}
-                  className="w-6 h-6 object-contain"
-                />
-              ) : (
-                <span className="w-6 h-6 bg-[#444] rounded" />
-              )}
-              <span className="text-sm text-white truncate">{it.title}</span>
-            </div>
-          ))}
-        </aside>
-
-        {/* grid / scroll view */}
-        <main className="flex-1 min-h-0 relative">
-          <div className="h-full overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-white scrollbar-track-[#262629] relative">
-            {/* thumbnails */}
-            {active && imageEntries.length > 0 && (
-              <div className="grid grid-cols-4 gap-4 content-start">
-                {imageEntries.map(({ src, text }, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setExpandedIdx(idx)}
-                    className="text-left focus:outline-none"
-                  >
-                    {/* card wrapper */}
-                    <div className="relative overflow-hidden rounded-lg">
-                      <img
-                        src={src}
-                        alt={text || "design"}
-                        className="w-full h-full object-cover
-                       transition-transform duration-300 ease-out
-                       hover:scale-110"
-                      />
-                    </div>
-
-                    {/* caption (optional) */}
-                    <span className="mt-1 text-xs text-gray-300 truncate block">
-                      {text}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {imageEntries.length === 0 && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="perspective-800">
-                  <div className="spin-3d">
-                    <Image
-                      src={logoUrl}
-                      alt="logo"
-                      width={220}
-                      height={60}
-                      priority
-                      unoptimized
-                      draggable={false}
-                      className="select-none"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* empty-state spinning logo */}
-            {!active && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="perspective-800">
-                  <div className="spin-3d">
-                    <Image
-                      src={logoUrl}
-                      alt="logo"
-                      width={220}
-                      height={60}
-                      priority
-                      unoptimized
-                      draggable={false}
-                      className="select-none"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
+      <div className="flex flex-col overflow-hidden" style={{ flex: 1, minHeight: 0, backgroundColor: MW.content, border: full ? "none" : `1px solid ${MW.gold}` }}>
+        {/* title bar */}
+        <div
+          className={"title-bar relative flex items-center justify-center flex-shrink-0 h-8 px-3" + (full ? "" : " cursor-move")}
+          style={{ backgroundColor: MW.frameDark, backgroundImage: stoneNoise, borderBottom: `1px solid ${MW.gold}` }}
+        >
+          <div className="absolute left-3 flex items-center space-x-1.5">
+            <button onMouseDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onClose(); }} onClick={onClose} className="w-5 h-5 md:w-3 md:h-3 rounded-full flex-shrink-0 transition-instant flex items-center justify-center" style={{ backgroundColor: MW.frame, border: `1px solid ${MW.gold}` }}>
+              <FaTimes style={{ ...iconStyle, color: MW.content }} />
+            </button>
+            <button onMouseDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onMinimizeFolder(folder); }} onClick={() => onMinimizeFolder(folder)} className="w-5 h-5 md:w-3 md:h-3 rounded-full flex-shrink-0 transition-instant flex items-center justify-center" style={{ backgroundColor: MW.frame, border: `1px solid ${MW.gold}` }}>
+              <FaMinus style={{ ...iconStyle, color: MW.content }} />
+            </button>
+            <button onMouseDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); setFS(!isFS); }} onClick={(e) => { e.stopPropagation(); setFS(!isFS); }} className="w-5 h-5 md:w-3 md:h-3 rounded-full flex-shrink-0 transition-instant flex items-center justify-center" style={{ backgroundColor: MW.frame, border: `1px solid ${MW.gold}` }}>
+              {isFS ? <FaCompress style={{ ...iconStyle, color: MW.content }} /> : <FaExpand style={{ ...iconStyle, color: MW.content }} />}
+            </button>
           </div>
+          <span className="text-xs font-serif tracking-widest uppercase select-none truncate px-20" style={{ color: MW.cream, backgroundColor: MW.content, padding: "1px 8px" }}>
+            Garment Designs
+          </span>
+          {logoUrl && <img src={logoUrl} alt="logo" className="absolute right-3 object-contain h-5 flex-shrink-0" />}
+        </div>
 
-          {/* light-box overlay */}
-          {expandedIdx !== null && (
-            <div
-              className="absolute inset-0 bg-black/80 flex items-center justify-center z-50"
-              onClick={closeExpanded}
-            >
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  closeExpanded();
+        {/* sidebar + grid */}
+        <div className="flex flex-1 overflow-hidden">
+          <aside className="w-52 shrink-0 border-r overflow-y-auto scrollbar-hide" style={{ backgroundColor: MW.goldDim, borderColor: MW.gold }}>
+            {(folder.items ?? []).map((it) => (
+              <div
+                key={it.id}
+                onClick={() => { setActive(it); setExpandedIdx(null); }}
+                className="flex items-center space-x-3 px-3 py-5 cursor-pointer transition-instant"
+                style={{
+                  backgroundColor: active?.id === it.id ? MW.gold : "transparent",
+                  borderBottom: `1px solid ${MW.gold}`,
                 }}
-                className="absolute top-4 right-4 text-white hover:opacity-80"
               >
-                <FaTimes size={26} />
-              </button>
-              {images.length > 1 && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    prev();
-                  }}
-                  className="absolute left-4 text-white hover:opacity-80"
-                >
-                  <FaChevronLeft size={32} />
-                </button>
+                {it.icon?.[0]?.url
+                  ? <img src={toUrl(it.icon[0].url)} alt={it.title} className="w-6 h-6 object-contain" />
+                  : <span className="w-6 h-6 rounded" style={{ backgroundColor: MW.muted }} />}
+                <span className="text-sm font-serif truncate" style={{ color: active?.id === it.id ? MW.cream : MW.tan }}>{it.title}</span>
+              </div>
+            ))}
+          </aside>
+
+          <main className="flex-1 min-h-0 relative" style={{ backgroundColor: MW.content }}>
+            <div className="h-full overflow-y-auto p-4 scrollbar-thin relative" style={{ scrollbarColor: `${MW.gold} ${MW.goldDim}` }}>
+              {active && imageEntries.length > 0 && (
+                <div className="grid grid-cols-4 gap-4 content-start">
+                  {imageEntries.map(({ src, text }, idx) => (
+                    <button key={idx} onClick={() => setExpandedIdx(idx)} className="text-left focus:outline-none">
+                      <div className="relative overflow-hidden" style={{ border: `1px solid ${MW.gold}` }}>
+                        <img src={src} alt={text || "design"} className="w-full h-full object-cover transition-transform duration-300 ease-out hover:scale-110" />
+                      </div>
+                      <span className="mt-1 text-xs truncate block" style={{ color: MW.tanDim ?? MW.tan }}>{text}</span>
+                    </button>
+                  ))}
+                </div>
               )}
-              <img
-                src={images[expandedIdx]}
-                alt="expanded"
-                className="max-h-full max-w-full object-contain rounded"
-                onClick={(e) => e.stopPropagation()}
-              />
-              {images.length > 1 && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    next();
-                  }}
-                  className="absolute right-4 text-white hover:opacity-80"
-                >
-                  <FaChevronRight size={32} />
-                </button>
+              {(!active || imageEntries.length === 0) && logoUrl && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="perspective-800">
+                    <div className="spin-3d">
+                      <Image src={logoUrl} alt="logo" width={220} height={60} priority unoptimized draggable={false} className="select-none" />
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
-          )}
-        </main>
+
+            {expandedIdx !== null && (
+              <div className="absolute inset-0 flex items-center justify-center z-50" style={{ backgroundColor: "rgba(0,0,0,0.9)" }} onClick={() => setExpandedIdx(null)}>
+                <button onClick={(e) => { e.stopPropagation(); setExpandedIdx(null); }} className="absolute top-4 right-4 transition-instant" style={{ color: MW.cream }}>
+                  <FaTimes size={22} />
+                </button>
+                {images.length > 1 && <>
+                  <button onClick={(e) => { e.stopPropagation(); setExpandedIdx((i) => (i - 1 + images.length) % images.length); }} className="absolute left-4 transition-instant" style={{ color: MW.cream }}>
+                    <FaChevronLeft size={28} />
+                  </button>
+                  <button onClick={(e) => { e.stopPropagation(); setExpandedIdx((i) => (i + 1) % images.length); }} className="absolute right-4 transition-instant" style={{ color: MW.cream }}>
+                    <FaChevronRight size={28} />
+                  </button>
+                </>}
+                <img src={images[expandedIdx]} alt="expanded" className="max-h-full max-w-full object-contain" style={{ border: `1px solid ${MW.gold}` }} onClick={(e) => e.stopPropagation()} />
+              </div>
+            )}
+          </main>
+        </div>
       </div>
     </div>
   );
 
-  /* ---------------- root render ---------------- */
   return (
     <div
-      onClick={onClose}
+      onClick={() => { if (!isResizingRef.current) onMinimizeFolder(folder); }}
       className="absolute inset-0 flex items-center justify-center z-30"
     >
       {loading ? (
-        <div
-          onClick={(e) => e.stopPropagation()}
-          className="w-72 h-72 bg-[#1e1d21] border border-gray-900 rounded-lg p-6 flex flex-col items-center justify-evenly"
-        >
-          {folder.icon?.[0]?.url ? (
-            <img
-              src={toUrl(folder.icon[0].url)}
-              alt={folder.title}
-              className="w-24 h-24 object-contain"
-            />
-          ) : (
-            <div className="w-24 h-24 bg-[#444] rounded" />
-          )}
-          <h2 className="text-gray-300 font-mono tracking-wider">
-            {folder.title}
-          </h2>
-          <div className="w-full h-4 border border-gray-600 bg-gray-800 overflow-hidden">
+        <div onClick={(e) => e.stopPropagation()} className="w-72 h-72 flex flex-col items-center justify-evenly p-6" style={{ backgroundColor: MW.content, backgroundImage: stoneNoise, border: `1px solid ${MW.gold}`, boxShadow: `0 0 0 1px ${MW.goldDim}` }}>
+          {folder.icon?.[0]?.url
+            ? <img src={toUrl(folder.icon[0].url)} alt={folder.title} className="w-24 h-24 object-contain" />
+            : <div className="w-24 h-24 rounded" style={{ backgroundColor: MW.muted }} />}
+          <h2 className="font-serif tracking-wider text-sm" style={{ color: MW.cream }}>{folder.title}</h2>
+          <div className="w-full h-4 overflow-hidden" style={{ border: `1px solid ${MW.gold}`, backgroundColor: MW.goldDim }}>
             <div
-              className="h-full bg-[length:24px_24px] bg-[linear-gradient(45deg,#ff0000_25%,#ffffff_25%,#ffffff_50%,#ff0000_50%,#ff0000_75%,#ffffff_75%,#ffffff_100%)] animate-[stripe_600ms_linear_infinite]"
-              style={{ width: `${progress}%` }}
+              className="h-full bg-[length:24px_24px] animate-[stripe_600ms_linear_infinite]"
+              style={{ width: `${progress}%`, backgroundImage: `linear-gradient(45deg,${MW.frame} 25%,${MW.goldDim} 25%,${MW.goldDim} 50%,${MW.frame} 50%,${MW.frame} 75%,${MW.goldDim} 75%,${MW.goldDim} 100%)` }}
             />
           </div>
         </div>
       ) : isFS ? (
-        <WindowBody full />
+        <div className="absolute inset-0" onClick={(e) => e.stopPropagation()}>
+          <WindowBody full />
+        </div>
       ) : (
-        <Draggable
-          handle=".title-bar"
-          bounds="parent"
-          nodeRef={dragRef}
-          defaultPosition={{ x: 0, y: 0 }}
-        >
-          <div ref={dragRef}>
-            <WindowBody full={false} />
+        <Draggable handle=".title-bar" bounds="parent" nodeRef={dragRef} defaultPosition={{ x: 0, y: 0 }}>
+          <div ref={dragRef} style={{ display: "inline-block" }} onClick={(e) => e.stopPropagation()}>
+            <Resizable size={size} onResizeStart={() => { isResizingRef.current = true; }} onResizeStop={(e, dir, ref) => { setSize({ width: ref.offsetWidth, height: ref.offsetHeight }); setTimeout(() => { isResizingRef.current = false; }, 100); }} minWidth={400} minHeight={300} maxWidth="calc(100vw - 2rem)" maxHeight="90vh" enable={CORNERS_ONLY}>
+              <WindowBody full={false} />
+            </Resizable>
           </div>
         </Draggable>
       )}
 
       <style jsx global>{`
-        /* depth + animation utilities (global so keyframes resolve) */
-        .perspective-800 {
-          perspective: 800px;
-        }
-        @keyframes spin3d {
-          from {
-            transform: rotateX(12deg) rotateY(0deg);
-          }
-          to {
-            transform: rotateX(12deg) rotateY(360deg);
-          }
-        }
-        .spin-3d {
-          transform-style: preserve-3d;
-          animation: spin3d 25s linear infinite;
-          will-change: transform;
-        }
-        @keyframes stripe {
-          0% {
-            background-position: 0 0;
-          }
-          100% {
-            background-position: 24px 0;
-          }
-        }
+        .perspective-800 { perspective: 800px; }
+        @keyframes spin3d { from { transform: rotateX(12deg) rotateY(0deg); } to { transform: rotateX(12deg) rotateY(360deg); } }
+        .spin-3d { transform-style: preserve-3d; animation: spin3d 25s linear infinite; will-change: transform; }
+        @keyframes stripe { 0% { background-position: 0 0; } 100% { background-position: 24px 0; } }
       `}</style>
     </div>
   );
