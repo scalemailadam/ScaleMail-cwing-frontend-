@@ -133,7 +133,7 @@ export default function Desktop({
     const folders = dc?.desktop_folders || [];
     setIconPositions(() => {
       const next = {};
-      const col = isMobile ? 10 : 40;
+      const col = isMobile ? 44 : 40;
       const row = isMobile ? 90 : 100;
       const perCol = isMobile ? 5 : 999;
       folders.forEach((f, i) => {
