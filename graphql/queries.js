@@ -158,6 +158,7 @@ const GET_PRODUCTS = gql`
       season
       category
       sizes
+      quantity
       images {
         url
       }
@@ -186,6 +187,7 @@ const GET_PRODUCT = gql`
       season
       category
       sizes
+      quantity
       images {
         url
       }

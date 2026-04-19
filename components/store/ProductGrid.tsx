@@ -16,6 +16,7 @@ export interface StrapiProduct {
   season: string;
   category: string;
   sizes: string[];
+  quantity?: number | null;
   images: { url: string }[];
   colors?: StrapiColorVariant[];
 }
@@ -54,6 +55,7 @@ const ProductGrid = ({ sortOrder, searchQuery, products }: ProductGridProps) => 
                 name={product.name}
                 price={product.price}
                 image={product.images[0] ? imgUrl(product.images[0].url) : ""}
+                quantity={product.quantity}
               />
             </div>
           ))}

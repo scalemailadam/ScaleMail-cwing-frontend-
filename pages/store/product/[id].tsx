@@ -71,7 +71,11 @@ export default function ProductDetail() {
     ? product.sizes.split(',').map((s: string) => s.trim()).filter(Boolean)
     : [];
 
+  const soldOut = product?.quantity !== null && product?.quantity !== undefined && product.quantity <= 0;
+  const lowStock = !soldOut && product?.quantity !== null && product?.quantity !== undefined && product.quantity <= 3;
+
   const handleAddToCart = () => {
+    if (soldOut) return;
     if (sizes.length && !selectedSize) { toast.error("Please select a size"); return; }
     if (product.colors?.length && !selectedColor) { toast.error("Please select a color"); return; }
     const cv = product.colors?.find((c: any) => c.name === selectedColor);
@@ -169,8 +173,17 @@ export default function ProductDetail() {
                 </div>
               )}
 
-              <button onClick={handleAddToCart} className="w-full bg-tech-black text-tech-white font-mono text-xs tracking-widest py-4 hover:bg-tech-gray-800 transition-colors cursor-pointer">
-                ADD TO CART
+              {lowStock && (
+                <p className="font-mono text-xs tracking-widest text-red-600 mb-4">
+                  ONLY {product.quantity} LEFT
+                </p>
+              )}
+              <button
+                onClick={handleAddToCart}
+                disabled={soldOut}
+                className={`w-full font-mono text-xs tracking-widest py-4 transition-colors ${soldOut ? "bg-tech-gray-300 text-tech-gray-500 cursor-default" : "bg-tech-black text-tech-white hover:bg-tech-gray-800 cursor-pointer"}`}
+              >
+                {soldOut ? "SOLD OUT" : "ADD TO CART"}
               </button>
             </div>
           </div>

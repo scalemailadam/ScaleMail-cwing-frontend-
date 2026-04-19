@@ -60,6 +60,33 @@ export default async function handler(req, res) {
       });
     }
 
+    // Decrement stock for each purchased item
+    if (process.env.STRAPI_API_TOKEN && process.env.NEXT_PUBLIC_STRAPI_URL) {
+      await Promise.allSettled(
+        items.map(async (item) => {
+          try {
+            const strapiBase = process.env.NEXT_PUBLIC_STRAPI_URL;
+            const headers = {
+              Authorization: `Bearer ${process.env.STRAPI_API_TOKEN}`,
+              "Content-Type": "application/json",
+            };
+            const getRes = await fetch(`${strapiBase}/api/products/${item.productId}?fields=quantity`, { headers });
+            const { data } = await getRes.json();
+            const current = data?.quantity;
+            if (current === null || current === undefined) return; // unlimited stock, skip
+            const updated = Math.max(0, current - item.quantity);
+            await fetch(`${strapiBase}/api/products/${item.productId}`, {
+              method: "PUT",
+              headers,
+              body: JSON.stringify({ data: { quantity: updated } }),
+            });
+          } catch (e) {
+            console.error(`Failed to decrement stock for ${item.productId}:`, e);
+          }
+        })
+      );
+    }
+
     res.status(200).json({ status: "COMPLETED", orderID });
   } catch (err) {
     console.error("PayPal capture error:", err);
