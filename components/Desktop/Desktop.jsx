@@ -133,8 +133,16 @@ export default function Desktop({
     const folders = dc?.desktop_folders || [];
     setIconPositions((prev) => {
       const next = { ...prev };
+      const isMob = typeof window !== "undefined" && window.innerWidth < 768;
+      const col = isMob ? 80 : 40;
+      const row = isMob ? 90 : 100;
+      const perCol = isMob ? 5 : 999;
       folders.forEach((f, i) => {
-        if (!next[f.documentId]) next[f.documentId] = { x: 40, y: 20 + i * 100 };
+        if (!next[f.documentId]) {
+          const c = Math.floor(i / perCol);
+          const r = i % perCol;
+          next[f.documentId] = { x: col + c * 90, y: 20 + r * row };
+        }
       });
       return next;
     });
