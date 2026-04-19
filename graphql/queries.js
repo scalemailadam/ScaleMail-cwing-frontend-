@@ -233,4 +233,16 @@ const GET_SYSTEM_SETTINGS = gql`
   }
 `;
 
-export { GET_HEADER, GET_DOCK, GET_FOLDER, GET_BROWSER_MODAL, GET_PRODUCTS, GET_PRODUCT, GET_SYSTEM_SETTINGS };
+const GET_LOOKBOOK_PHOTOS = gql`
+  query GetLookbookPhotos {
+    lookbookPhotos(sort: "order:asc") {
+      documentId
+      caption
+      image {
+        url
+      }
+    }
+  }
+`;
+
+export { GET_HEADER, GET_DOCK, GET_FOLDER, GET_BROWSER_MODAL, GET_PRODUCTS, GET_PRODUCT, GET_SYSTEM_SETTINGS, GET_LOOKBOOK_PHOTOS };

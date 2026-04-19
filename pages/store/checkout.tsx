@@ -41,7 +41,7 @@ export default function CheckoutPage() {
         <StoreHeader sortOrder={sortOrder} onSortChange={setSortOrder} searchQuery={searchQuery} onSearchChange={setSearchQuery} />
         <main className="flex-1 pt-16 flex flex-col items-center justify-center gap-6">
           <p className="font-mono text-xs tracking-widest">YOUR CART IS EMPTY</p>
-          <button onClick={() => router.push("/store")} className="font-mono text-xs tracking-widest border border-tech-black px-8 py-3 hover:bg-tech-black hover:text-tech-white transition-colors cursor-pointer">
+          <button onClick={() => router.push("/store/shop")} className="font-mono text-xs tracking-widest border border-tech-black px-8 py-3 hover:bg-tech-black hover:text-tech-white transition-colors cursor-pointer">
             CONTINUE SHOPPING
           </button>
         </main>

@@ -21,7 +21,7 @@ const StoreHeader = ({ sortOrder, onSortChange, searchQuery, onSearchChange }: S
       <div className="px-4">
         <div className="flex items-center justify-between h-12">
           {/* Logo */}
-          <button onClick={() => router.push("/store")} className="flex items-center">
+          <button onClick={() => router.push("/store/shop")} className="flex items-center">
             <img src="/store-assets/scale-mail-logo.png" alt="SCALE MAIL" className="h-6" />
           </button>
 

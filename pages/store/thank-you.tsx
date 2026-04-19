@@ -20,7 +20,7 @@ export default function ThankYouPage() {
           We&apos;ll get back to you as soon as possible.
         </p>
         <button
-          onClick={() => router.push("/store")}
+          onClick={() => router.push("/store/shop")}
           className="font-mono text-xs tracking-widest border border-tech-black px-8 py-3 hover:bg-tech-black hover:text-tech-white transition-colors"
         >
           CONTINUE SHOPPING

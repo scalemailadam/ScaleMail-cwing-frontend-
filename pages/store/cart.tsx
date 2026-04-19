@@ -20,7 +20,7 @@ export default function CartPage() {
         {items.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-6">
             <p className="font-mono text-xs tracking-widest text-tech-gray-800">YOUR CART IS EMPTY</p>
-            <button onClick={() => router.push("/store")} className="font-mono text-xs tracking-widest border border-tech-black px-8 py-3 hover:bg-tech-black hover:text-tech-white transition-colors">
+            <button onClick={() => router.push("/store/shop")} className="font-mono text-xs tracking-widest border border-tech-black px-8 py-3 hover:bg-tech-black hover:text-tech-white transition-colors">
               CONTINUE SHOPPING
             </button>
           </div>
