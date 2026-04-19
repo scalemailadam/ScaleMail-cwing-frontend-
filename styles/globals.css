@@ -47,6 +47,17 @@ summary {
   cursor: pointer;
 }
 
+/* ── Store: reset fonts to system defaults ──────────────────────── */
+body.store-page,
+body.store-page * {
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-serif: Georgia, "Times New Roman", serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+}
+body.store-page {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
 /* ── Store: tech color tokens ───────────────────────────────────── */
 @theme {
   --font-sans: "MagicCards", serif;
