@@ -28,6 +28,7 @@ const TechProductCard = ({ id, code, name, image }: TechProductCardProps) => {
           alt={code}
           fill
           sizes="(max-width: 768px) 50vw, 33vw"
+          quality={100}
           className="object-cover transition-transform duration-200 group-hover:scale-105"
         />
         <div className={`absolute inset-0 bg-tech-black/10 transition-opacity duration-200 ${isHovered ? "opacity-100" : "opacity-0"}`} />
