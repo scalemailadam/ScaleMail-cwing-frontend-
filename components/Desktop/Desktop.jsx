@@ -126,27 +126,24 @@ export default function Desktop({
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Initialize icon positions once data loads
+  // Initialize icon positions once data loads (re-runs when isMobile resolves)
   useEffect(() => {
     if (!data?.folderCategories) return;
     const dc = data.folderCategories.find((c) => c.name === "Desktop");
     const folders = dc?.desktop_folders || [];
-    setIconPositions((prev) => {
-      const next = { ...prev };
-      const isMob = typeof window !== "undefined" && window.innerWidth < 768;
-      const col = isMob ? 80 : 40;
-      const row = isMob ? 90 : 100;
-      const perCol = isMob ? 5 : 999;
+    setIconPositions(() => {
+      const next = {};
+      const col = isMobile ? 10 : 40;
+      const row = isMobile ? 90 : 100;
+      const perCol = isMobile ? 5 : 999;
       folders.forEach((f, i) => {
-        if (!next[f.documentId]) {
-          const c = Math.floor(i / perCol);
-          const r = i % perCol;
-          next[f.documentId] = { x: col + c * 90, y: 20 + r * row };
-        }
+        const c = Math.floor(i / perCol);
+        const r = i % perCol;
+        next[f.documentId] = { x: col + c * 80, y: 20 + r * row };
       });
       return next;
     });
-  }, [data]);
+  }, [data, isMobile]);
 
   useEffect(() => {
     if (openFolder && openFolder.modalSlug !== "openFolder") {
