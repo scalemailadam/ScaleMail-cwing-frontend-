@@ -59,6 +59,7 @@ const GET_FOLDER = gql`
         richContent
         backgroundColor
         textColor
+        order
         icon {
           url
         }

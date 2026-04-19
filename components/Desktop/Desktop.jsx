@@ -179,7 +179,9 @@ export default function Desktop({
 
   const categories = data.folderCategories || [];
   const desktopCategory = categories.find((c) => c.name === "Desktop");
-  const desktopFolders = desktopCategory?.desktop_folders || [];
+  const desktopFolders = [...(desktopCategory?.desktop_folders || [])].sort(
+    (a, b) => (a.order ?? 0) - (b.order ?? 0)
+  );
   foldersRef.current = desktopFolders;
   const finderFolder = desktopFolders.find((f) => normalizeSlug(f.modalSlug) === "openfolder");
   iconRefs.current = desktopFolders.map(
