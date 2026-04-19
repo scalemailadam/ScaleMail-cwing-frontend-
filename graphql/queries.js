@@ -233,6 +233,15 @@ const GET_SYSTEM_SETTINGS = gql`
   }
 `;
 
+const GET_STORE_HOME = gql`
+  query GetStoreHome {
+    storeHome {
+      shopImage { url }
+      lookbookImage { url }
+    }
+  }
+`;
+
 const GET_LOOKBOOK_PHOTOS = gql`
   query GetLookbookPhotos {
     lookbookPhotos(sort: "order:asc") {
@@ -245,4 +254,4 @@ const GET_LOOKBOOK_PHOTOS = gql`
   }
 `;
 
-export { GET_HEADER, GET_DOCK, GET_FOLDER, GET_BROWSER_MODAL, GET_PRODUCTS, GET_PRODUCT, GET_SYSTEM_SETTINGS, GET_LOOKBOOK_PHOTOS };
+export { GET_HEADER, GET_DOCK, GET_FOLDER, GET_BROWSER_MODAL, GET_PRODUCTS, GET_PRODUCT, GET_SYSTEM_SETTINGS, GET_LOOKBOOK_PHOTOS, GET_STORE_HOME };

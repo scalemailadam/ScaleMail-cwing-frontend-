@@ -1,14 +1,20 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
 import Image from "next/image";
+import { useQuery } from "@apollo/client";
+import { GET_STORE_HOME } from "../../graphql/queries";
 
-const SHOP_IMG     = "https://res.cloudinary.com/da1mmkcbp/image/upload/v1776599956/SCALEMAIL_xujapb.jpg";
-const LOOKBOOK_IMG = "https://res.cloudinary.com/da1mmkcbp/image/upload/v1776599933/DSC08114_xbz4xv.jpg";
+const SHOP_IMG_FALLBACK     = "https://res.cloudinary.com/da1mmkcbp/image/upload/v1776599956/SCALEMAIL_xujapb.jpg";
+const LOOKBOOK_IMG_FALLBACK = "https://res.cloudinary.com/da1mmkcbp/image/upload/v1776599933/DSC08114_xbz4xv.jpg";
 
 export default function StoreHome() {
   const router = useRouter();
   const [hoveredShop,     setHoveredShop]     = useState(false);
   const [hoveredLookbook, setHoveredLookbook] = useState(false);
+
+  const { data: cmsData } = useQuery(GET_STORE_HOME);
+  const shopImg     = cmsData?.storeHome?.shopImage?.url     || SHOP_IMG_FALLBACK;
+  const lookbookImg = cmsData?.storeHome?.lookbookImage?.url || LOOKBOOK_IMG_FALLBACK;
 
   return (
     <div className="flex flex-col md:flex-row w-screen h-screen overflow-hidden">
@@ -22,10 +28,10 @@ export default function StoreHome() {
         onClick={() => router.push("/store/shop")}
       >
         <Image
-          src={SHOP_IMG}
+          src={shopImg}
           alt="Shop"
           fill
-          quality={100}
+          unoptimized
           priority
           className="object-cover transition-transform duration-700 ease-out"
           style={{ transform: hoveredShop ? "scale(1.03)" : "scale(1)" }}
@@ -62,10 +68,10 @@ export default function StoreHome() {
         onClick={() => router.push("/store/lookbook")}
       >
         <Image
-          src={LOOKBOOK_IMG}
+          src={lookbookImg}
           alt="Lookbook"
           fill
-          quality={100}
+          unoptimized
           priority
           className="object-cover transition-transform duration-700 ease-out"
           style={{ transform: hoveredLookbook ? "scale(1.03)" : "scale(1)" }}
