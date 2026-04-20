@@ -104,11 +104,13 @@ export default function Desktop({
   const [iconPositions, setIconPositions] = useState({});
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [selBox, setSelBox] = useState(null);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   // Refs to avoid stale closures in document event listeners
   const iconPosRef = useRef({});
   const foldersRef = useRef([]);
   const dragStartRef = useRef({});
+  const hasAnimatedRef = useRef(false);
 
   useEffect(() => { iconPosRef.current = iconPositions; }, [iconPositions]);
 
@@ -126,23 +128,56 @@ export default function Desktop({
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Initialize icon positions once data loads (re-runs when isMobile resolves)
+  // Arrange icons in a circle; animate from center on first load
   useEffect(() => {
-    if (!data?.folderCategories) return;
+    if (!data?.folderCategories || !desktopRef.current) return;
     const dc = data.folderCategories.find((c) => c.name === "Desktop");
-    const folders = dc?.desktop_folders || [];
-    setIconPositions(() => {
-      const next = {};
-      const col = isMobile ? 44 : 40;
-      const row = isMobile ? 90 : 100;
-      const perCol = isMobile ? 5 : 999;
-      folders.forEach((f, i) => {
-        const c = Math.floor(i / perCol);
-        const r = i % perCol;
-        next[f.documentId] = { x: col + c * 80, y: 20 + r * row };
-      });
-      return next;
+    const folders = [...(dc?.desktop_folders || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    if (folders.length === 0) return;
+
+    const rect = desktopRef.current.getBoundingClientRect();
+    const W = rect.width  || window.innerWidth;
+    const H = rect.height || window.innerHeight - 120;
+    const n = folders.length;
+
+    // Icon centre offsets (w-16 = 64px wide, ~90px tall with label)
+    const iconW = 64, iconH = 90;
+    const cx = W / 2 - iconW / 2;
+    const cy = H / 2 - iconH / 2;
+
+    // Radius: large enough that icons don't overlap, small enough to fit screen
+    const pad = isMobile ? 56 : 72;
+    const minR = (n * (isMobile ? 80 : 95)) / (2 * Math.PI);
+    const maxR = Math.min(W / 2 - pad - iconW / 2, H / 2 - pad - iconH / 2);
+    const radius = Math.max(Math.min(minR, maxR), isMobile ? 90 : 120);
+
+    const circlePos = {};
+    folders.forEach((f, i) => {
+      const angle = (2 * Math.PI * i) / n - Math.PI / 2; // start from 12 o'clock
+      circlePos[f.documentId] = {
+        x: Math.round(cx + radius * Math.cos(angle)),
+        y: Math.round(cy + radius * Math.sin(angle)),
+      };
     });
+
+    if (!hasAnimatedRef.current) {
+      hasAnimatedRef.current = true;
+      // Place everything at centre first
+      const centerPos = {};
+      folders.forEach((f) => { centerPos[f.documentId] = { x: Math.round(cx), y: Math.round(cy) }; });
+      setIconPositions(centerPos);
+      setIsAnimating(true);
+      // Two rAF ticks to ensure the centre render has painted before we move
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIconPositions(circlePos);
+          const done = 900 + n * 80;
+          setTimeout(() => setIsAnimating(false), done);
+        });
+      });
+    } else {
+      setIconPositions(circlePos);
+    }
   }, [data, isMobile]);
 
   useEffect(() => {
@@ -491,9 +526,16 @@ export default function Desktop({
             <div
               ref={ref}
               className="absolute cursor-pointer select-none"
-              style={isSelected ? { outline: "2px solid rgba(100,149,237,0.8)", outlineOffset: "3px" } : {}}
+              style={{
+                ...(isSelected ? { outline: "2px solid rgba(100,149,237,0.8)", outlineOffset: "3px" } : {}),
+                ...(isAnimating ? {
+                  transition: "transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                  transitionDelay: `${i * 0.07}s`,
+                } : {}),
+              }}
               onMouseDown={(e) => {
                 e.stopPropagation();
+                setIsAnimating(false);
                 if (!e.ctrlKey && !e.metaKey) {
                   setSelectedIds(new Set([folder.documentId]));
                 } else {
