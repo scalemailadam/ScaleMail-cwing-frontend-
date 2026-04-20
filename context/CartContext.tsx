@@ -9,6 +9,7 @@ export interface CartItem {
   size: string;
   color: string;
   quantity: number;
+  availableStock?: number | null;
 }
 
 interface CartContextType {
@@ -44,6 +45,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const addItem = (newItem: Omit<CartItem, "quantity">) => {
     setItems((prev) => {
+      const maxStock = newItem.availableStock;
+      const totalInCart = prev
+        .filter((i) => i.productId === newItem.productId)
+        .reduce((sum, i) => sum + i.quantity, 0);
+      if (maxStock !== null && maxStock !== undefined && totalInCart >= maxStock) return prev;
+
       const existing = prev.find(
         (i) => i.productId === newItem.productId && i.size === newItem.size && i.color === newItem.color
       );
@@ -64,11 +71,19 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const updateQuantity = (productId: string, size: string, color: string, quantity: number) => {
     if (quantity <= 0) return removeItem(productId, size, color);
-    setItems((prev) =>
-      prev.map((i) =>
-        i.productId === productId && i.size === size && i.color === color ? { ...i, quantity } : i
-      )
-    );
+    setItems((prev) => {
+      const item = prev.find((i) => i.productId === productId && i.size === size && i.color === color);
+      const maxStock = item?.availableStock;
+      const otherTotal = prev
+        .filter((i) => i.productId === productId && !(i.size === size && i.color === color))
+        .reduce((sum, i) => sum + i.quantity, 0);
+      const cap = maxStock !== null && maxStock !== undefined ? Math.max(0, maxStock - otherTotal) : Infinity;
+      const clamped = Math.min(quantity, cap);
+      if (clamped <= 0) return prev.filter((i) => !(i.productId === productId && i.size === size && i.color === color));
+      return prev.map((i) =>
+        i.productId === productId && i.size === size && i.color === color ? { ...i, quantity: clamped } : i
+      );
+    });
   };
 
   const clearCart = () => {

@@ -23,6 +23,22 @@ export default async function handler(req, res) {
 
   const { items, shipping = 15 } = req.body;
 
+  // Server-side stock validation
+  if (process.env.NEXT_PUBLIC_STRAPI_URL && process.env.STRAPI_API_TOKEN) {
+    const strapiBase = process.env.NEXT_PUBLIC_STRAPI_URL;
+    const headers = { Authorization: `Bearer ${process.env.STRAPI_API_TOKEN}` };
+    for (const item of items) {
+      try {
+        const r = await fetch(`${strapiBase}/api/products/${item.productId}?fields=quantity`, { headers });
+        const { data } = await r.json();
+        const stock = data?.quantity;
+        if (stock !== null && stock !== undefined && item.quantity > stock) {
+          return res.status(400).json({ error: `${item.code} only has ${stock} in stock`, outOfStock: true });
+        }
+      } catch (_) {}
+    }
+  }
+
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const total = subtotal + shipping;
 

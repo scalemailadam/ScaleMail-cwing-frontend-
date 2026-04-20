@@ -20,7 +20,7 @@ export default function ProductDetail() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
-  const { addItem } = useCart();
+  const { addItem, items } = useCart();
 
   const { data, loading, error } = useQuery(GET_PRODUCT, {
     variables: { documentId: id },
@@ -74,8 +74,14 @@ export default function ProductDetail() {
   const soldOut = product?.quantity !== null && product?.quantity !== undefined && product.quantity <= 0;
   const lowStock = !soldOut && product?.quantity !== null && product?.quantity !== undefined && product.quantity <= 3;
 
+  const cartTotalForProduct = items
+    .filter((i) => i.productId === product.documentId)
+    .reduce((sum, i) => sum + i.quantity, 0);
+  const atMaxStock = product?.quantity !== null && product?.quantity !== undefined && cartTotalForProduct >= product.quantity;
+
   const handleAddToCart = () => {
     if (soldOut) return;
+    if (atMaxStock) { toast.error("No more stock available"); return; }
     if (sizes.length && !selectedSize) { toast.error("Please select a size"); return; }
     if (product.colors?.length && !selectedColor) { toast.error("Please select a color"); return; }
     const cv = product.colors?.find((c: any) => c.name === selectedColor);
@@ -87,6 +93,7 @@ export default function ProductDetail() {
       image: cv?.image ? imgUrl(cv.image.url) : activeImages[0],
       size: selectedSize ?? "One Size",
       color: selectedColor ?? "Default",
+      availableStock: product.quantity ?? null,
     });
     toast.success(`${product.code} added to cart`);
   };
@@ -179,10 +186,10 @@ export default function ProductDetail() {
               )}
               <button
                 onClick={handleAddToCart}
-                disabled={soldOut}
-                className={`w-full font-mono text-xs tracking-widest py-4 transition-colors ${soldOut ? "bg-tech-gray-300 text-tech-gray-500 cursor-default" : "bg-tech-black text-tech-white hover:bg-tech-gray-800 cursor-pointer"}`}
+                disabled={soldOut || atMaxStock}
+                className={`w-full font-mono text-xs tracking-widest py-4 transition-colors ${soldOut || atMaxStock ? "bg-tech-gray-300 text-tech-gray-500 cursor-default" : "bg-tech-black text-tech-white hover:bg-tech-gray-800 cursor-pointer"}`}
               >
-                {soldOut ? "SOLD OUT" : "ADD TO CART"}
+                {soldOut ? "SOLD OUT" : atMaxStock ? "MAX IN CART" : "ADD TO CART"}
               </button>
             </div>
           </div>

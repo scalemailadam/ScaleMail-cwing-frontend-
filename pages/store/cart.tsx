@@ -40,7 +40,11 @@ export default function CartPage() {
                     <div className="flex items-center border border-tech-gray-300 w-fit mt-3">
                       <button onClick={() => updateQuantity(item.productId, item.size, item.color, item.quantity - 1)} className="p-2 hover:bg-white transition-colors"><Minus className="w-3 h-3" /></button>
                       <span className="font-mono text-xs tracking-widest px-3">{item.quantity}</span>
-                      <button onClick={() => updateQuantity(item.productId, item.size, item.color, item.quantity + 1)} className="p-2 hover:bg-white transition-colors"><Plus className="w-3 h-3" /></button>
+                      <button
+                        onClick={() => updateQuantity(item.productId, item.size, item.color, item.quantity + 1)}
+                        disabled={item.availableStock !== null && item.availableStock !== undefined && items.filter(i => i.productId === item.productId).reduce((s, i) => s + i.quantity, 0) >= item.availableStock}
+                        className="p-2 hover:bg-white transition-colors disabled:opacity-30 disabled:cursor-default"
+                      ><Plus className="w-3 h-3" /></button>
                     </div>
                   </div>
                   <div className="flex flex-col items-end justify-between">

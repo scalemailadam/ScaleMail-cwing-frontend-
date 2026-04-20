@@ -157,6 +157,7 @@ export default function CheckoutPage() {
                     body: JSON.stringify({ items, shipping: SHIPPING }),
                   });
                   const data = await res.json();
+                  if (data.outOfStock) { setError(data.error); throw new Error(data.error); }
                   if (!data.orderID) throw new Error("Failed to create order");
                   return data.orderID;
                 }}
