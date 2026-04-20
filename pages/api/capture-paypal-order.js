@@ -40,6 +40,48 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Payment not completed", details: captureData });
     }
 
+    // Post-capture stock check — refund if someone else bought the last item first
+    if (process.env.NEXT_PUBLIC_STRAPI_URL && process.env.STRAPI_API_TOKEN) {
+      const strapiBase = process.env.NEXT_PUBLIC_STRAPI_URL;
+      const strapiHeaders = {
+        Authorization: `Bearer ${process.env.STRAPI_API_TOKEN}`,
+        "Content-Type": "application/json",
+      };
+      const oversoldItems = [];
+      await Promise.allSettled(
+        items.map(async (item) => {
+          try {
+            const r = await fetch(`${strapiBase}/api/products/${item.productId}?fields=quantity`, { headers: strapiHeaders });
+            const { data } = await r.json();
+            const stock = data?.quantity;
+            if (stock !== null && stock !== undefined && item.quantity > stock) {
+              oversoldItems.push(item.code);
+            }
+          } catch (_) {}
+        })
+      );
+
+      if (oversoldItems.length > 0) {
+        // Issue full refund
+        const refundAccessToken = await getAccessToken();
+        const captureId = captureData.purchase_units?.[0]?.payments?.captures?.[0]?.id;
+        if (captureId) {
+          await fetch(`${PAYPAL_API}/v2/payments/captures/${captureId}/refund`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${refundAccessToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({}),
+          });
+        }
+        return res.status(409).json({
+          error: `Sorry, ${oversoldItems.join(", ")} just sold out. You have been fully refunded.`,
+          oversold: true,
+        });
+      }
+    }
+
     // Send confirmation email via Resend if API key is set
     if (process.env.RESEND_API_KEY) {
       const { Resend } = await import("resend");

@@ -176,6 +176,8 @@ export default function CheckoutPage() {
                   if (result.status === "COMPLETED") {
                     clearCart();
                     router.push("/store/thank-you?type=order");
+                  } else if (result.oversold) {
+                    setError(result.error);
                   } else {
                     setError("Payment could not be confirmed. Please try again.");
                   }
