@@ -5,7 +5,46 @@ import StoreHeader from "@/components/store/StoreHeader";
 import StoreFooter from "@/components/store/StoreFooter";
 import { useCart } from "@/context/CartContext";
 
-const SHIPPING = 15;
+const SHIPPING_RATES: Record<string, number> = {
+  IL: 15,
+  US: 75,
+};
+const DEFAULT_SHIPPING = 100;
+const getShipping = (code: string) => SHIPPING_RATES[code] ?? DEFAULT_SHIPPING;
+
+const COUNTRIES = [
+  { code: "AF", name: "Afghanistan" }, { code: "AL", name: "Albania" },
+  { code: "DZ", name: "Algeria" }, { code: "AR", name: "Argentina" },
+  { code: "AU", name: "Australia" }, { code: "AT", name: "Austria" },
+  { code: "BE", name: "Belgium" }, { code: "BR", name: "Brazil" },
+  { code: "CA", name: "Canada" }, { code: "CL", name: "Chile" },
+  { code: "CN", name: "China" }, { code: "CO", name: "Colombia" },
+  { code: "HR", name: "Croatia" }, { code: "CZ", name: "Czech Republic" },
+  { code: "DK", name: "Denmark" }, { code: "EG", name: "Egypt" },
+  { code: "FI", name: "Finland" }, { code: "FR", name: "France" },
+  { code: "DE", name: "Germany" }, { code: "GR", name: "Greece" },
+  { code: "HK", name: "Hong Kong" }, { code: "HU", name: "Hungary" },
+  { code: "IN", name: "India" }, { code: "ID", name: "Indonesia" },
+  { code: "IE", name: "Ireland" }, { code: "IL", name: "Israel" },
+  { code: "IT", name: "Italy" }, { code: "JP", name: "Japan" },
+  { code: "JO", name: "Jordan" }, { code: "KZ", name: "Kazakhstan" },
+  { code: "KR", name: "South Korea" }, { code: "KW", name: "Kuwait" },
+  { code: "LB", name: "Lebanon" }, { code: "MY", name: "Malaysia" },
+  { code: "MX", name: "Mexico" }, { code: "NL", name: "Netherlands" },
+  { code: "NZ", name: "New Zealand" }, { code: "NG", name: "Nigeria" },
+  { code: "NO", name: "Norway" }, { code: "PK", name: "Pakistan" },
+  { code: "PE", name: "Peru" }, { code: "PH", name: "Philippines" },
+  { code: "PL", name: "Poland" }, { code: "PT", name: "Portugal" },
+  { code: "QA", name: "Qatar" }, { code: "RO", name: "Romania" },
+  { code: "RU", name: "Russia" }, { code: "SA", name: "Saudi Arabia" },
+  { code: "SG", name: "Singapore" }, { code: "ZA", name: "South Africa" },
+  { code: "ES", name: "Spain" }, { code: "SE", name: "Sweden" },
+  { code: "CH", name: "Switzerland" }, { code: "TW", name: "Taiwan" },
+  { code: "TH", name: "Thailand" }, { code: "TR", name: "Turkey" },
+  { code: "UA", name: "Ukraine" }, { code: "AE", name: "United Arab Emirates" },
+  { code: "GB", name: "United Kingdom" }, { code: "US", name: "United States" },
+  { code: "VN", name: "Vietnam" },
+];
 
 interface CustomerInfo {
   name: string;
@@ -29,9 +68,10 @@ export default function CheckoutPage() {
 
   const [{ isPending, isRejected }] = usePayPalScriptReducer();
   const formComplete = Object.values(info).every((v) => v.trim() !== "");
-  const total = totalPrice + SHIPPING;
+  const shipping = getShipping(info.country);
+  const total = totalPrice + shipping;
 
-  const handleField = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleField = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setInfo((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
@@ -82,16 +122,13 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between font-mono text-xs tracking-widest">
                   <span className="text-tech-gray-800">SHIPPING</span>
-                  <span>${SHIPPING.toFixed(2)}</span>
+                  <span>{info.country ? `$${shipping.toFixed(2)}` : "—"}</span>
                 </div>
                 <div className="flex justify-between font-mono text-sm tracking-widest border-t border-tech-gray-200 pt-2 mt-2">
                   <span>TOTAL</span>
-                  <span>${total.toLocaleString()}</span>
+                  <span>{info.country ? `$${total.toLocaleString()}` : "—"}</span>
                 </div>
               </div>
-              <p className="font-mono text-[10px] leading-relaxed text-tech-gray-800 tracking-wide mt-4">
-                For international orders, contact us for a shipping quote.
-              </p>
             </div>
 
             {/* Shipping Info */}
@@ -104,7 +141,6 @@ export default function CheckoutPage() {
                   { name: "address", label: "ADDRESS", colSpan: 2 },
                   { name: "city", label: "CITY", colSpan: 1 },
                   { name: "zip", label: "ZIP / POSTAL", colSpan: 1 },
-                  { name: "country", label: "COUNTRY", colSpan: 2 },
                 ].map(({ name, label, colSpan }) => (
                   <div key={name} className={colSpan === 2 ? "col-span-2" : ""}>
                     <label className="font-mono text-xs tracking-widest text-tech-gray-800 block mb-2">{label}</label>
@@ -118,6 +154,21 @@ export default function CheckoutPage() {
                     />
                   </div>
                 ))}
+                <div className="col-span-2">
+                  <label className="font-mono text-xs tracking-widest text-tech-gray-800 block mb-2">COUNTRY</label>
+                  <select
+                    name="country"
+                    value={info.country}
+                    onChange={handleField}
+                    required
+                    className="w-full font-mono text-xs tracking-widest border border-tech-gray-300 px-4 py-3 bg-transparent outline-none focus:border-tech-black transition-colors cursor-pointer"
+                  >
+                    <option value="">Select country…</option>
+                    {COUNTRIES.map((c) => (
+                      <option key={c.code} value={c.code}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
           </div>
@@ -154,7 +205,7 @@ export default function CheckoutPage() {
                   const res = await fetch("/api/create-paypal-order", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ items, shipping: SHIPPING }),
+                    body: JSON.stringify({ items, shipping, customerInfo: info }),
                   });
                   const data = await res.json();
                   if (data.outOfStock) { setError(data.error); throw new Error(data.error); }
@@ -168,7 +219,7 @@ export default function CheckoutPage() {
                     body: JSON.stringify({
                       orderID: data.orderID,
                       items,
-                      shipping: SHIPPING,
+                      shipping,
                       customerInfo: info,
                     }),
                   });

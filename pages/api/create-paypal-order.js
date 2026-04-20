@@ -21,7 +21,7 @@ async function getAccessToken() {
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
 
-  const { items, shipping = 15 } = req.body;
+  const { items, shipping = 100, customerInfo } = req.body;
 
   // Server-side stock validation
   if (process.env.NEXT_PUBLIC_STRAPI_URL && process.env.STRAPI_API_TOKEN) {
@@ -68,6 +68,17 @@ export default async function handler(req, res) {
               quantity: String(item.quantity),
               unit_amount: { currency_code: "USD", value: item.price.toFixed(2) },
             })),
+            ...(customerInfo && {
+              shipping: {
+                name: { full_name: customerInfo.name },
+                address: {
+                  address_line_1: customerInfo.address,
+                  admin_area_2: customerInfo.city,
+                  postal_code: customerInfo.zip,
+                  country_code: customerInfo.country,
+                },
+              },
+            }),
           },
         ],
       }),
