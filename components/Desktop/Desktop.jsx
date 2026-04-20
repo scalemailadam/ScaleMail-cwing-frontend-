@@ -84,6 +84,10 @@ export default function Desktop({
   const [finderSize, setFinderSize] = useState({ width: 800, height: 520 });
   const isFinderResizingRef = useRef(false);
   const [customModal, setCustomModal] = useState(null);
+  // Game modal is tracked separately so it stays mounted (and Phaser state persists)
+  // when the user minimizes it. Unlike customModal, minimizing only hides it.
+  const [gameModalFolder, setGameModalFolder] = useState(null);
+  const [gameModalMinimized, setGameModalMinimized] = useState(false);
   const [openImageFolder, setOpenImageFolder] = useState(null);
   const [openPicture, setOpenPicture] = useState(null);
   const [openTextItem, setOpenTextItem] = useState(null);
@@ -110,7 +114,7 @@ export default function Desktop({
   const iconPosRef = useRef({});
   const foldersRef = useRef([]);
   const dragStartRef = useRef({});
-  const hasAnimatedRef = useRef(false);
+  const hasAnimatedRef = useRef(false); // set to true after first animation plays
 
   useEffect(() => { iconPosRef.current = iconPositions; }, [iconPositions]);
 
@@ -140,16 +144,25 @@ export default function Desktop({
     const H = rect.height || window.innerHeight - 120;
     const n = folders.length;
 
-    // Icon centre offsets (w-16 = 64px wide, ~90px tall with label)
+    // Icon dimensions (w-16 = 64px wide, icon 64px + label ~26px = ~90px tall)
     const iconW = 64, iconH = 90;
-    const cx = W / 2 - iconW / 2;
-    const cy = H / 2 - iconH / 2;
 
-    // Radius: large enough that icons don't overlap, small enough to fit screen
-    const pad = isMobile ? 56 : 72;
-    const minR = (n * (isMobile ? 80 : 95)) / (2 * Math.PI);
-    const maxR = Math.min(W / 2 - pad - iconW / 2, H / 2 - pad - iconH / 2);
-    const radius = Math.max(Math.min(minR, maxR), isMobile ? 90 : 120);
+    // Radius
+    const mobilePad = 24;
+    const desktopPad = 56;
+    const mobileMaxR = W / 2 - mobilePad - iconW / 2;
+    const desktopMaxR = Math.min(W / 2 - desktopPad - iconW / 2, H / 2 - desktopPad - iconH / 2);
+    const minSpacingR = (n * (isMobile ? 78 : 90)) / (2 * Math.PI);
+    const radius = Math.max(
+      (isMobile ? mobileMaxR : desktopMaxR) * (isMobile ? 0.96 : 0.88),
+      minSpacingR
+    );
+
+    // Centre: on mobile anchor top of circle 18px below header; on desktop push up
+    const cx = W / 2 - iconW / 2;
+    const cy = isMobile
+      ? 18 + radius          // top icon sits 18px from top of desktop area
+      : H / 2 - iconH / 2 - 45;
 
     const circlePos = {};
     folders.forEach((f, i) => {
@@ -181,6 +194,15 @@ export default function Desktop({
   }, [data, isMobile]);
 
   useEffect(() => {
+    const slug = normalizeSlug(openFolder?.modalSlug);
+    if (slug === "ghoulsgamemodal") {
+      // Route game through its persistent slot; clear any regular modal
+      setGameModalFolder(openFolder);
+      setGameModalMinimized(false);
+      setSelectedFolderId(openFolder.documentId);
+      setCustomModal(null);
+      return;
+    }
     if (openFolder && openFolder.modalSlug !== "openFolder") {
       setCustomModal(openFolder);
       setSelectedFolderId(openFolder.documentId);
@@ -238,7 +260,14 @@ export default function Desktop({
       return;
     }
     onOpenFolder(folder);
-    if (normalizeSlug(folder.modalSlug) === "openfolder") {
+    const slug = normalizeSlug(folder.modalSlug);
+    if (slug === "ghoulsgamemodal") {
+      setGameModalFolder(folder);
+      setGameModalMinimized(false);
+      setSelectedFolderId(folder.documentId);
+      return;
+    }
+    if (slug === "openfolder") {
       setFinderViewFolder(null);
       setSelectedFolderId(null);
       setBackStack([]);
@@ -247,6 +276,20 @@ export default function Desktop({
     } else {
       setCustomModal(folder);
       setSelectedFolderId(folder.documentId);
+    }
+  };
+
+  const minimizeGameModal = () => {
+    if (!gameModalFolder) return;
+    setGameModalMinimized(true);
+    onMinimizeFolder(gameModalFolder);
+  };
+
+  const closeGameModal = () => {
+    setGameModalFolder(null);
+    setGameModalMinimized(false);
+    if (normalizeSlug(openFolder?.modalSlug) === "ghoulsgamemodal") {
+      onCloseFolder();
     }
   };
 
@@ -804,6 +847,17 @@ export default function Desktop({
             </Draggable>
           </div>
         )
+      )}
+
+      {gameModalFolder && (
+        <div style={{ display: gameModalMinimized ? "none" : "contents" }}>
+          <GhoulsGameModal
+            folder={gameModalFolder}
+            onClose={closeGameModal}
+            onMinimizeFolder={minimizeGameModal}
+            isMinimized={gameModalMinimized}
+          />
+        </div>
       )}
 
       {customModal &&

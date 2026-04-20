@@ -113,6 +113,7 @@ function makeGameScene() {
       this.canDoubleJump = true;
       this._lastAttack = 0;
       this._spawnTick = 0;
+      this._kills = 0;
       this._arremers = [];
       // touch flags
       this.touchLeft = false;
@@ -245,6 +246,7 @@ function makeGameScene() {
       this.time.delayedCall(120, () => { if (enemy.active) enemy.clearTint(); });
       if (enemy.hp <= 0) {
         this.score += enemy.enemyType === "arremer" ? 500 : 100;
+        this._kills += 1;
         this.scene.get("UI")?.events.emit("score", this.score);
         this._arremers = this._arremers.filter((a) => a !== enemy);
         enemy.destroy();
@@ -350,13 +352,19 @@ function makeGameScene() {
         }
       });
 
-      // Periodic spawn
+      // Periodic spawn — threshold shrinks as kills accumulate (harder over time)
       this._spawnTick += 1;
-      if (this._spawnTick > 320) {
+      const spawnThreshold = Math.max(60, 320 - this._kills * 12);
+      if (this._spawnTick > spawnThreshold) {
         this._spawnTick = 0;
         const wx = this.physics.world.bounds.width;
         const sx = Phaser.Math.Clamp(P.x + (Math.random() > 0.5 ? 550 : -550), 50, wx - 50);
         this._spawnZombie(sx, this.scale.height - 60);
+        // Occasionally spawn an arremer once the player has proven themselves
+        if (this._kills >= 5 && this._arremers.length < 3 && Math.random() < 0.25) {
+          const ax = Phaser.Math.Clamp(P.x + (Math.random() > 0.5 ? 500 : -500), 50, wx - 50);
+          this._spawnArremer(ax, this.scale.height - 200);
+        }
       }
 
       // Cull off-screen lances
@@ -413,16 +421,20 @@ function makeGameOverScene() {
 
 // ─── React component ──────────────────────────────────────────────────────────
 
-export default function GhoulsGameModal({ folder, onClose, onMinimizeFolder }) {
-  const [isFS, setFS] = useState(false);
+export default function GhoulsGameModal({ folder, onClose, onMinimizeFolder, isMinimized }) {
+  const isMobileDefault = typeof window !== "undefined" && window.innerWidth < 768;
+  const [isFS, setFS] = useState(isMobileDefault);
   const [size, setSize] = useState(() => ({
     width:  typeof window !== "undefined" ? Math.min(820, window.innerWidth  - 32) : 820,
     height: typeof window !== "undefined" ? Math.min(520, window.innerHeight - 100) : 520,
   }));
+  const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
+  const [showResume, setShowResume] = useState(false);
   const CANVAS_ID      = useRef(`ghoulsgame-${Math.random().toString(36).slice(2)}`).current;
   const dragRef        = useRef(null);
   const isResizingRef  = useRef(false);
   const gameRef        = useRef(null);
+  const wasPausedRef   = useRef(false);
 
   useEffect(() => {
     if (gameRef.current || typeof window === "undefined") return;
@@ -438,6 +450,10 @@ export default function GhoulsGameModal({ folder, onClose, onMinimizeFolder }) {
           width:  el.clientWidth  || 800,
           height: el.clientHeight || 450,
           parent: el,
+          scale: {
+            mode:       P.Scale?.FIT ?? 2,
+            autoCenter: P.Scale?.CENTER_BOTH ?? 1,
+          },
           backgroundColor: "#1a0a2e",
           physics: { default: "arcade", arcade: { gravity: { y: 600 }, debug: false } },
           scene: [makeBootScene(), makeGameScene(), makeUIScene(), makeGameOverScene()],
@@ -451,6 +467,54 @@ export default function GhoulsGameModal({ folder, onClose, onMinimizeFolder }) {
     };
   }, []);
 
+  // Refresh Phaser scale after fullscreen toggle so it fills the new container
+  useEffect(() => {
+    if (!gameRef.current) return;
+    const t = setTimeout(() => gameRef.current?.scale?.refresh(), 60);
+    return () => clearTimeout(t);
+  }, [isFS]);
+
+  // Clamp windowed size if browser window shrinks, then refresh Phaser scale
+  useEffect(() => {
+    const onResize = () => {
+      setSize((s) => ({
+        width:  Math.min(s.width,  window.innerWidth  - 32),
+        height: Math.min(s.height, window.innerHeight - 100),
+      }));
+      setTimeout(() => gameRef.current?.scale?.refresh(), 150);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  // Pause Phaser scenes when minimized; show tap-to-resume overlay when restored
+  useEffect(() => {
+    const g = gameRef.current;
+    if (!g) return;
+    if (isMinimized) {
+      try {
+        if (g.scene.isActive("Game")) g.scene.pause("Game");
+        if (g.scene.isActive("UI"))   g.scene.pause("UI");
+        wasPausedRef.current = true;
+      } catch (_) {}
+    } else if (wasPausedRef.current) {
+      setShowResume(true);
+      setTimeout(() => g.scale?.refresh(), 60);
+    }
+  }, [isMinimized]);
+
+  const resumeGame = () => {
+    const g = gameRef.current;
+    if (!g) return;
+    try {
+      if (g.scene.isPaused("Game")) g.scene.resume("Game");
+      if (g.scene.isPaused("UI"))   g.scene.resume("UI");
+    } catch (_) {}
+    wasPausedRef.current = false;
+    setShowResume(false);
+    setTimeout(() => g.scale?.refresh(), 30);
+  };
+
   const touch = () => gameRef.current?._touch;
 
   const TBtn = ({ onDown, onUp, label }) => (
@@ -458,13 +522,18 @@ export default function GhoulsGameModal({ folder, onClose, onMinimizeFolder }) {
       onPointerDown={(e) => { e.preventDefault(); onDown(); }}
       onPointerUp={(e)   => { e.preventDefault(); onUp();   }}
       onPointerLeave={(e)=> { e.preventDefault(); onUp();   }}
+      onContextMenu={(e) => e.preventDefault()}
       style={{
         width: 52, height: 52,
         backgroundColor: "rgba(212,200,128,0.15)",
         border: "1px solid rgba(212,200,128,0.4)",
         color: "#d4c880", fontFamily: "monospace", fontSize: 20,
         display: "flex", alignItems: "center", justifyContent: "center",
-        userSelect: "none", touchAction: "none",
+        userSelect: "none",
+        WebkitUserSelect: "none",
+        WebkitTouchCallout: "none",
+        WebkitTapHighlightColor: "transparent",
+        touchAction: "none",
       }}
     >{label}</button>
   );
@@ -517,11 +586,18 @@ export default function GhoulsGameModal({ folder, onClose, onMinimizeFolder }) {
 
   // The canvas container is always rendered so the Phaser DOM node is stable.
   // We use CSS to show it in either windowed or fullscreen layout.
+  const noSelect = {
+    userSelect: "none",
+    WebkitUserSelect: "none",
+    WebkitTouchCallout: "none",
+    WebkitTapHighlightColor: "transparent",
+  };
+
   const canvasArea = (
-    <div className="flex-1 relative overflow-hidden" style={{ minHeight: 0 }}>
-      <div id={CANVAS_ID} className="w-full h-full" style={{ backgroundColor: "#1a0a2e" }} />
+    <div className="flex-1 relative overflow-hidden" style={{ minHeight: 0, ...noSelect }}>
+      <div id={CANVAS_ID} className="w-full h-full" style={{ backgroundColor: "#1a0a2e", ...noSelect }} />
       {/* Touch controls */}
-      <div className="absolute bottom-4 inset-x-0 flex justify-between px-4 pointer-events-none" style={{ zIndex: 20 }}>
+      <div className="absolute bottom-4 inset-x-0 flex justify-between px-4 pointer-events-none" style={{ zIndex: 20, ...noSelect }}>
         <div className="flex gap-1 pointer-events-auto">
           <TBtn label="◀" onDown={() => touch()?.left(true)}  onUp={() => touch()?.left(false)} />
           <TBtn label="▶" onDown={() => touch()?.right(true)} onUp={() => touch()?.right(false)} />
@@ -531,6 +607,34 @@ export default function GhoulsGameModal({ folder, onClose, onMinimizeFolder }) {
           <TBtn label="↑" onDown={() => { touch()?.jump(true);   setTimeout(() => touch()?.jump(false),   80); }} onUp={() => {}} />
         </div>
       </div>
+      {showResume && (
+        <div
+          onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); resumeGame(); }}
+          onClick={(e) => { e.stopPropagation(); resumeGame(); }}
+          className="absolute inset-0 flex items-center justify-center"
+          style={{
+            backgroundColor: "rgba(0,0,0,0.75)",
+            zIndex: 30,
+            cursor: "pointer",
+            ...noSelect,
+          }}
+        >
+          <div
+            className="font-mono tracking-widest"
+            style={{
+              color: MW.cream,
+              fontSize: 18,
+              padding: "14px 26px",
+              border: `1px solid ${MW.frame}`,
+              backgroundColor: "rgba(6,6,4,0.8)",
+              textAlign: "center",
+            }}
+          >
+            PAUSED
+            <div style={{ fontSize: 12, marginTop: 8, color: "#d4c880" }}>TAP TO RESUME</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -561,14 +665,19 @@ export default function GhoulsGameModal({ folder, onClose, onMinimizeFolder }) {
   return (
     <div
       onClick={() => { if (!isResizingRef.current) onMinimizeFolder(folder); }}
-      className="absolute inset-0 flex items-center justify-center z-30"
+      className={
+        isFS
+          ? "fixed inset-0 flex items-center justify-center z-[60]"
+          : "absolute inset-0 flex items-center justify-center z-30"
+      }
     >
       <Draggable
         handle=".title-bar"
         bounds="parent"
         nodeRef={dragRef}
         disabled={isFS}
-        defaultPosition={{ x: 0, y: 0 }}
+        position={isFS ? { x: 0, y: 0 } : dragPos}
+        onStop={(_e, data) => { if (!isFS) setDragPos({ x: data.x, y: data.y }); }}
       >
         <div
           ref={dragRef}
@@ -586,7 +695,10 @@ export default function GhoulsGameModal({ folder, onClose, onMinimizeFolder }) {
               onResizeStart={() => { isResizingRef.current = true; }}
               onResizeStop={(e, dir, ref) => {
                 setSize({ width: ref.offsetWidth, height: ref.offsetHeight });
-                setTimeout(() => { isResizingRef.current = false; }, 100);
+                setTimeout(() => {
+                  gameRef.current?.scale?.refresh();
+                  isResizingRef.current = false;
+                }, 100);
               }}
               minWidth={480} minHeight={320}
               maxWidth="calc(100vw - 2rem)" maxHeight="90vh"
