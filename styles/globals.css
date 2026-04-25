@@ -56,6 +56,7 @@ body.store-page * {
 }
 body.store-page {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  overflow-x: hidden;
 }
 
 /* ── Store: tech color tokens ───────────────────────────────────── */

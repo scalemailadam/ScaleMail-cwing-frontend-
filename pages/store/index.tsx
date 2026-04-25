@@ -17,7 +17,7 @@ export default function StoreHome() {
   const lookbookImg = cmsData?.storeHome?.lookbookImage?.url || LOOKBOOK_IMG_FALLBACK;
 
   return (
-    <div className="flex flex-col md:flex-row w-screen h-screen overflow-hidden">
+    <div className="flex flex-col md:flex-row w-full h-screen overflow-hidden">
 
       {/* ── SHOP panel ── */}
       <div
