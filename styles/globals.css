@@ -57,6 +57,38 @@ body.store-page * {
 body.store-page {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   overflow-x: hidden;
+  scrollbar-color: auto;
+  scrollbar-width: auto;
+}
+
+/* Reset webkit scrollbars to browser default on all store pages */
+body.store-page ::-webkit-scrollbar,
+body.store-page::-webkit-scrollbar {
+  width: auto;
+  height: auto;
+}
+body.store-page ::-webkit-scrollbar-track,
+body.store-page::-webkit-scrollbar-track {
+  background: initial;
+  border-left: none;
+}
+body.store-page ::-webkit-scrollbar-thumb,
+body.store-page::-webkit-scrollbar-thumb {
+  background: initial;
+  border: none;
+  border-radius: initial;
+}
+body.store-page ::-webkit-scrollbar-thumb:hover,
+body.store-page::-webkit-scrollbar-thumb:hover {
+  background: initial;
+}
+body.store-page ::-webkit-scrollbar-button,
+body.store-page::-webkit-scrollbar-button {
+  display: none;
+}
+body.store-page ::-webkit-scrollbar-corner,
+body.store-page::-webkit-scrollbar-corner {
+  background: initial;
 }
 
 /* ── Store: tech color tokens ───────────────────────────────────── */
