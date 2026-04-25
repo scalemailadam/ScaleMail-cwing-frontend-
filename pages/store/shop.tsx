@@ -11,7 +11,7 @@ export default function ShopPage() {
   const { data, loading, error } = useQuery(GET_PRODUCTS);
 
   return (
-    <div className="min-h-screen bg-tech-white text-tech-gray-800 flex flex-col">
+    <div className="min-h-screen w-full bg-tech-white text-tech-gray-800 flex flex-col overflow-x-hidden">
       <StoreHeader
         sortOrder={sortOrder}
         onSortChange={setSortOrder}

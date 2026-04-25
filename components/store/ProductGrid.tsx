@@ -44,9 +44,9 @@ const ProductGrid = ({ sortOrder, searchQuery, products }: ProductGridProps) => 
   else if (sortOrder === "old-to-new") filtered.sort((a, b) => a.documentId.localeCompare(b.documentId));
 
   return (
-    <section className="bg-tech-white min-h-screen">
+    <section className="bg-tech-white min-h-screen w-full overflow-x-hidden">
       <div className="py-8 px-4">
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 w-full">
           {filtered.map((product) => (
             <div key={product.documentId} className="border border-white">
               <TechProductCard
