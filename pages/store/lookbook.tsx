@@ -41,7 +41,8 @@ export default function LookbookPage() {
                     src={imgUrl(photo.image.url)}
                     alt={photo.caption ?? "Lookbook photo"}
                     fill
-                    unoptimized
+                    loading="lazy"
+                    sizes="(max-width: 640px) 50vw, 33vw"
                     className="object-cover"
                   />
                 </div>
