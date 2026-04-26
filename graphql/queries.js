@@ -150,7 +150,7 @@ const GET_BROWSER_MODAL = gql`
 `;
 const GET_PRODUCTS = gql`
   query GetProducts {
-    products(sort: "createdAt:desc") {
+    products(sort: "createdAt:desc", pagination: { limit: -1 }) {
       documentId
       code
       name
@@ -245,7 +245,7 @@ const GET_STORE_HOME = gql`
 
 const GET_LOOKBOOK_PHOTOS = gql`
   query GetLookbookPhotos {
-    lookbookPhotos(sort: "order:asc") {
+    lookbookPhotos(sort: "order:asc", pagination: { limit: -1 }) {
       documentId
       caption
       image {
