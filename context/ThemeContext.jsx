@@ -4,15 +4,16 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 
 // Default theme definitions (fallback if CMS data hasn't loaded yet)
 const DEFAULT_THEMES = {
-  "dark-blue": { tipColor: "#355566", baseColor: "#102630", strokeColor: "#2a0e0e" },
+  "antigravity": { tipColor: "#a9b180", baseColor: "#11130c", strokeColor: "#3a3f28" },
+  "dark-blue": { tipColor: "#5a8fb3", baseColor: "#102630", strokeColor: "#2a0e0e" },
   "light-red": { tipColor: "#c45555", baseColor: "#5a1a1a", strokeColor: "#3a0e0e" },
   "white":     { tipColor: "#e8e8e8", baseColor: "#b0b0b0", strokeColor: "#999999" },
-  "black":     { tipColor: "#2a2a2a", baseColor: "#0a0a0a", strokeColor: "#050505" },
+  "black":     { tipColor: "#8a8a8a", baseColor: "#0a0a0a", strokeColor: "#050505" },
 };
 
 const ThemeContext = createContext({
   themeKey: "dark-blue",
-  tipColor: "#355566",
+  tipColor: "#5a8fb3",
   baseColor: "#102630",
   strokeColor: "#2a0e0e",
   colorMode: "dark",

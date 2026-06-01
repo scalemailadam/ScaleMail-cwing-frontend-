@@ -13,10 +13,6 @@ import dynamic from "next/dynamic";
 import { GET_FOLDER } from "@/graphql/queries";
 import { useTheme } from "@/context/ThemeContext";
 
-const ArmorBackground = dynamic(() => import("@/components/ArmorBackground"), {
-  ssr: false,
-});
-
 const MW = {
   frame:     "#c8a030",
   frameDark: "#a07820",

@@ -27,6 +27,10 @@ const getLogoUrl = (logoArr = []) => {
 export default function Header({ onMenuItemClick }) {
   const [now, setNow] = useState(new Date());
   const { data, loading, error } = useQuery(GET_HEADER);
+  // Hooks must run unconditionally on every render — keep this above the early
+  // returns below, or React throws "change in the order of Hooks" once the query
+  // resolves (loading: true -> false changes which hooks run).
+  const { isDark } = useTheme();
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 10000);
@@ -44,7 +48,6 @@ export default function Header({ onMenuItemClick }) {
   const { logo, darkLogo, menus = [], socialLinks = [] } = data?.header ?? {};
   const lightLogoUrl = getLogoUrl(logo);
   const darkLogoUrl = darkLogo?.url ? (darkLogo.url.startsWith("http") ? darkLogo.url : `${STRAPI_URL}${darkLogo.url}`) : null;
-  const { isDark } = useTheme();
   const logoUrl = isDark ? (darkLogoUrl || lightLogoUrl) : lightLogoUrl;
 
   const getSocialIcon = (iconName) => {

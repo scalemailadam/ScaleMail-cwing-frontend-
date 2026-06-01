@@ -39,10 +39,10 @@ const DEFAULT_SIDEBAR = [
 ];
 
 const DEFAULT_BG_OPTIONS = [
-  { id: 1, label: "Dark Blue",  themeKey: "dark-blue",  tipColor: "#355566", baseColor: "#102630", strokeColor: "#2a0e0e" },
+  { id: 1, label: "Dark Blue",  themeKey: "dark-blue",  tipColor: "#5a8fb3", baseColor: "#102630", strokeColor: "#2a0e0e" },
   { id: 2, label: "Light Red",  themeKey: "light-red",  tipColor: "#c45555", baseColor: "#5a1a1a", strokeColor: "#3a0e0e" },
   { id: 3, label: "White",      themeKey: "white",      tipColor: "#e8e8e8", baseColor: "#b0b0b0", strokeColor: "#999999" },
-  { id: 4, label: "Black",      themeKey: "black",      tipColor: "#2a2a2a", baseColor: "#0a0a0a", strokeColor: "#050505" },
+  { id: 4, label: "Black",      themeKey: "black",      tipColor: "#8a8a8a", baseColor: "#0a0a0a", strokeColor: "#050505" },
 ];
 
 export default function SystemSettingsModal({ folder, onClose, onMinimizeFolder }) {
@@ -184,14 +184,14 @@ export default function SystemSettingsModal({ folder, onClose, onMinimizeFolder 
                   <div
                     className="w-full aspect-[4/3] relative overflow-hidden"
                     style={{
-                      background: `linear-gradient(135deg, ${opt.tipColor} 0%, ${opt.baseColor} 100%)`,
+                      background: "#000000",
                       border: isActive ? `2px solid ${MW.frame}` : `2px solid ${MW.muted}`,
                       boxShadow: isActive ? `0 0 8px ${MW.frame}` : "none",
                     }}
                   >
-                    <div className="absolute inset-0 opacity-30">
+                    <div className="absolute inset-0 opacity-80">
                       {[...Array(6)].map((_, i) => (
-                        <div key={i} className="absolute rounded-full" style={{ width: "30%", height: "40%", left: `${(i % 3) * 33 + (Math.floor(i / 3) % 2 ? 16 : 0)}%`, top: `${Math.floor(i / 3) * 35}%`, background: `radial-gradient(ellipse at 50% 30%, ${opt.tipColor}88 0%, transparent 70%)`, border: `1px solid ${opt.strokeColor}44` }} />
+                        <div key={i} className="absolute rounded-full" style={{ width: "30%", height: "40%", left: `${(i % 3) * 33 + (Math.floor(i / 3) % 2 ? 16 : 0)}%`, top: `${Math.floor(i / 3) * 35}%`, background: `radial-gradient(ellipse at 50% 30%, ${opt.tipColor} 0%, transparent 70%)` }} />
                       ))}
                     </div>
                   </div>
