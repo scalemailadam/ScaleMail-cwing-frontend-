@@ -80,6 +80,7 @@ const GET_FOLDER = gql`
           subItem {
             id
             text
+            url
             contentItems {
               id
               image {

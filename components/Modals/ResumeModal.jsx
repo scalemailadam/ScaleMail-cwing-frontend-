@@ -25,7 +25,12 @@ const iconStyle = { display: "block", width: "55%", height: "55%" };
 
 export default function ResumeModal({ folder, onClose, onMinimizeFolder }) {
   const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL ?? "";
+  // Strapi media returns root-relative /uploads paths that need the CMS host prepended.
   const toUrl = (u = "") => (u?.startsWith("http") ? u : `${STRAPI_URL}${u}`);
+  // A sub-item's `url` field is a manual pointer: either a full external URL, or a
+  // root-relative path (e.g. /portfolio.pdf) served statically by this site itself.
+  // Use it verbatim — do NOT prepend the CMS host.
+  const toPointer = (u = "") => u;
 
   const { data } = useQuery(GET_HEADER);
   const { isDark } = useTheme();
@@ -33,12 +38,22 @@ export default function ResumeModal({ folder, onClose, onMinimizeFolder }) {
   const darkLogoUrl  = data?.header?.darkLogo?.url  ? toUrl(data.header.darkLogo.url)  : null;
   const logoUrl = isDark ? (darkLogoUrl || lightLogoUrl) : lightLogoUrl;
 
+  // A sub-item's `url` is normally a website link (ignored here, as before). Only when
+  // it points at a viewable document do we treat it as something to display — this lets
+  // a 20 MB portfolio live as a static /portfolio.pdf on this site (set the sub-item's
+  // Url to "/portfolio.pdf" in Strapi) instead of in Cloudinary. Uploaded media still
+  // works exactly as it did, so existing resume folders are unaffected.
+  const VIEWABLE = /\.(pdf|png|jpe?g|gif|webp|avif|svg)$/i;
   const images =
     folder?.items
       ?.flatMap((it) => it?.subItem ?? [])
-      ?.flatMap((si) => si?.image ?? [])
-      ?.filter((img) => img?.url)
-      ?.map((img) => toUrl(img.url)) ?? [];
+      ?.flatMap((si) => {
+        const fromUrl = si?.url && VIEWABLE.test(si.url) ? [toPointer(si.url)] : [];
+        const fromMedia = (si?.image ?? [])
+          .filter((img) => img?.url)
+          .map((img) => toUrl(img.url));
+        return [...fromUrl, ...fromMedia];
+      }) ?? [];
 
   const [idx, setIdx] = useState(0);
   const [isFS, setFS] = useState(false);
