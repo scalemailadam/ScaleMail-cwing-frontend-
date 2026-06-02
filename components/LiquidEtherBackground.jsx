@@ -27,7 +27,7 @@ export default function LiquidEtherBackground() {
         colors={palette}
         mouseForce={24}
         cursorSize={120}
-        isViscous={false}
+        isViscous={true}
         viscous={36}
         iterationsViscous={32}
         iterationsPoisson={32}
