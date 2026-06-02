@@ -39,10 +39,13 @@ const DEFAULT_SIDEBAR = [
 ];
 
 const DEFAULT_BG_OPTIONS = [
-  { id: 1, label: "Dark Blue", themeKey: "dark-blue", color1: "#102630", color2: "#2b5876", color3: "#5a8fb3" },
-  { id: 2, label: "Light Red", themeKey: "light-red", color1: "#3a0e0e", color2: "#7a2222", color3: "#c45555" },
-  { id: 3, label: "White",     themeKey: "white",     color1: "#9a9a9a", color2: "#cfcfcf", color3: "#ffffff" },
-  { id: 4, label: "Black",     themeKey: "black",     color1: "#0a0a0a", color2: "#2a2a2a", color3: "#6a6a6a" },
+  { id: 1, label: "Arcane Magic",    themeKey: "dark-blue",   color1: "#160d3a", color2: "#3d5cff", color3: "#8be9ff" },
+  { id: 2, label: "Molten Lava",     themeKey: "light-red",   color1: "#3a0d07", color2: "#e23d11", color3: "#ffd24a" },
+  { id: 3, label: "Platinum Chrome", themeKey: "white",       color1: "#4a5560", color2: "#b8c2cf", color3: "#f5f9ff" },
+  { id: 4, label: "Obsidian Void",   themeKey: "black",       color1: "#070709", color2: "#20202e", color3: "#58506f" },
+  { id: 5, label: "Verdant Aurora",  themeKey: "antigravity", color1: "#06140d", color2: "#2f8f57", color3: "#9dffb0" },
+  { id: 6, label: "Royal Amethyst",  themeKey: "amethyst",    color1: "#1e0b35", color2: "#7b2ff7", color3: "#d59bff" },
+  { id: 7, label: "Ember Gold",      themeKey: "ember-gold",  color1: "#2a1602", color2: "#c8881a", color3: "#ffe08a" },
 ];
 
 // Pull the LiquidEther 3-stop palette out of a background option (CMS or default).

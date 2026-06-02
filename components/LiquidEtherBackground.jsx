@@ -25,10 +25,10 @@ export default function LiquidEtherBackground() {
       <LiquidEther
         style={{ width: "100%", height: "100%" }}
         colors={palette}
-        mouseForce={20}
-        cursorSize={100}
+        mouseForce={24}
+        cursorSize={120}
         isViscous={false}
-        viscous={30}
+        viscous={36}
         iterationsViscous={32}
         iterationsPoisson={32}
         resolution={0.5}

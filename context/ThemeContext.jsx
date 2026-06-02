@@ -7,11 +7,13 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 // background (low-velocity stop → high-velocity stop). The CMS exposes the
 // same three stops as color1/color2/color3 on each Background Option.
 const DEFAULT_THEMES = {
-  "antigravity": { colors: ["#11130c", "#5f6a3a", "#a9b180"] },
-  "dark-blue":   { colors: ["#102630", "#2b5876", "#5a8fb3"] },
-  "light-red":   { colors: ["#3a0e0e", "#7a2222", "#c45555"] },
-  "white":       { colors: ["#9a9a9a", "#cfcfcf", "#ffffff"] },
-  "black":       { colors: ["#0a0a0a", "#2a2a2a", "#6a6a6a"] },
+  "dark-blue":   { colors: ["#160d3a", "#3d5cff", "#8be9ff"] }, // Arcane Magic
+  "light-red":   { colors: ["#3a0d07", "#e23d11", "#ffd24a"] }, // Molten Lava
+  "white":       { colors: ["#4a5560", "#b8c2cf", "#f5f9ff"] }, // Platinum Chrome
+  "black":       { colors: ["#070709", "#20202e", "#58506f"] }, // Obsidian Void
+  "antigravity": { colors: ["#06140d", "#2f8f57", "#9dffb0"] }, // Verdant Aurora
+  "amethyst":    { colors: ["#1e0b35", "#7b2ff7", "#d59bff"] }, // Royal Amethyst
+  "ember-gold":  { colors: ["#2a1602", "#c8881a", "#ffe08a"] }, // Ember Gold
 };
 
 const DEFAULT_KEY = "dark-blue";
