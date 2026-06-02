@@ -226,10 +226,9 @@ const GET_SYSTEM_SETTINGS = gql`
         id
         label
         themeKey
-        tipColor
-        baseColor
-        strokeColor
-        previewColor
+        color1
+        color2
+        color3
       }
     }
   }

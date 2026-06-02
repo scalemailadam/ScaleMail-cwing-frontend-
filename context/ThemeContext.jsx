@@ -2,20 +2,36 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 
-// Default theme definitions (fallback if CMS data hasn't loaded yet)
+// Default theme definitions (fallback if CMS data hasn't loaded yet).
+// Each theme is a 3-stop color palette fed to the LiquidEther fluid
+// background (low-velocity stop → high-velocity stop). The CMS exposes the
+// same three stops as color1/color2/color3 on each Background Option.
 const DEFAULT_THEMES = {
-  "antigravity": { tipColor: "#a9b180", baseColor: "#11130c", strokeColor: "#3a3f28" },
-  "dark-blue": { tipColor: "#5a8fb3", baseColor: "#102630", strokeColor: "#2a0e0e" },
-  "light-red": { tipColor: "#c45555", baseColor: "#5a1a1a", strokeColor: "#3a0e0e" },
-  "white":     { tipColor: "#e8e8e8", baseColor: "#b0b0b0", strokeColor: "#999999" },
-  "black":     { tipColor: "#8a8a8a", baseColor: "#0a0a0a", strokeColor: "#050505" },
+  "antigravity": { colors: ["#11130c", "#5f6a3a", "#a9b180"] },
+  "dark-blue":   { colors: ["#102630", "#2b5876", "#5a8fb3"] },
+  "light-red":   { colors: ["#3a0e0e", "#7a2222", "#c45555"] },
+  "white":       { colors: ["#9a9a9a", "#cfcfcf", "#ffffff"] },
+  "black":       { colors: ["#0a0a0a", "#2a2a2a", "#6a6a6a"] },
 };
 
+const DEFAULT_KEY = "dark-blue";
+
+// Back-compat helper: legacy consumers still read tipColor/baseColor/strokeColor.
+// Derive them from the palette (tip = brightest/last stop, base = first stop,
+// stroke = middle stop).
+function legacyFromColors(colors) {
+  const c = colors && colors.length ? colors : DEFAULT_THEMES[DEFAULT_KEY].colors;
+  return {
+    tipColor: c[c.length - 1],
+    baseColor: c[0],
+    strokeColor: c[Math.floor(c.length / 2)] || c[0],
+  };
+}
+
 const ThemeContext = createContext({
-  themeKey: "dark-blue",
-  tipColor: "#5a8fb3",
-  baseColor: "#102630",
-  strokeColor: "#2a0e0e",
+  themeKey: DEFAULT_KEY,
+  colors: DEFAULT_THEMES[DEFAULT_KEY].colors,
+  ...legacyFromColors(DEFAULT_THEMES[DEFAULT_KEY].colors),
   colorMode: "dark",
   isDark: true,
   setTheme: () => {},
@@ -23,8 +39,8 @@ const ThemeContext = createContext({
 });
 
 export function ThemeProvider({ children }) {
-  const [themeKey, setThemeKey] = useState("dark-blue");
-  const [colors, setColors] = useState(DEFAULT_THEMES["dark-blue"]);
+  const [themeKey, setThemeKey] = useState(DEFAULT_KEY);
+  const [colors, setColors] = useState(DEFAULT_THEMES[DEFAULT_KEY].colors);
   const colorMode = "light";
   const isDark = false;
 
@@ -33,20 +49,23 @@ export function ThemeProvider({ children }) {
       const saved = localStorage.getItem("scalemail-theme");
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.themeKey && parsed.tipColor) {
+        if (parsed.themeKey && Array.isArray(parsed.colors) && parsed.colors.length) {
           setThemeKey(parsed.themeKey);
-          setColors({ tipColor: parsed.tipColor, baseColor: parsed.baseColor, strokeColor: parsed.strokeColor });
+          setColors(parsed.colors);
         }
       }
     } catch {}
   }, []);
 
   const setTheme = (key, themeColors) => {
-    const c = themeColors || DEFAULT_THEMES[key] || DEFAULT_THEMES["dark-blue"];
+    const c =
+      (Array.isArray(themeColors) && themeColors.length && themeColors) ||
+      DEFAULT_THEMES[key]?.colors ||
+      DEFAULT_THEMES[DEFAULT_KEY].colors;
     setThemeKey(key);
     setColors(c);
     try {
-      localStorage.setItem("scalemail-theme", JSON.stringify({ themeKey: key, ...c }));
+      localStorage.setItem("scalemail-theme", JSON.stringify({ themeKey: key, colors: c }));
     } catch {}
   };
 
@@ -56,9 +75,8 @@ export function ThemeProvider({ children }) {
     <ThemeContext.Provider
       value={{
         themeKey,
-        tipColor: colors.tipColor,
-        baseColor: colors.baseColor,
-        strokeColor: colors.strokeColor,
+        colors,
+        ...legacyFromColors(colors),
         colorMode,
         isDark,
         setTheme,

@@ -39,11 +39,14 @@ const DEFAULT_SIDEBAR = [
 ];
 
 const DEFAULT_BG_OPTIONS = [
-  { id: 1, label: "Dark Blue",  themeKey: "dark-blue",  tipColor: "#5a8fb3", baseColor: "#102630", strokeColor: "#2a0e0e" },
-  { id: 2, label: "Light Red",  themeKey: "light-red",  tipColor: "#c45555", baseColor: "#5a1a1a", strokeColor: "#3a0e0e" },
-  { id: 3, label: "White",      themeKey: "white",      tipColor: "#e8e8e8", baseColor: "#b0b0b0", strokeColor: "#999999" },
-  { id: 4, label: "Black",      themeKey: "black",      tipColor: "#8a8a8a", baseColor: "#0a0a0a", strokeColor: "#050505" },
+  { id: 1, label: "Dark Blue", themeKey: "dark-blue", color1: "#102630", color2: "#2b5876", color3: "#5a8fb3" },
+  { id: 2, label: "Light Red", themeKey: "light-red", color1: "#3a0e0e", color2: "#7a2222", color3: "#c45555" },
+  { id: 3, label: "White",     themeKey: "white",     color1: "#9a9a9a", color2: "#cfcfcf", color3: "#ffffff" },
+  { id: 4, label: "Black",     themeKey: "black",     color1: "#0a0a0a", color2: "#2a2a2a", color3: "#6a6a6a" },
 ];
+
+// Pull the LiquidEther 3-stop palette out of a background option (CMS or default).
+const paletteOf = (opt) => [opt?.color1, opt?.color2, opt?.color3].filter(Boolean);
 
 export default function SystemSettingsModal({ folder, onClose, onMinimizeFolder }) {
   const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL ?? "";
@@ -175,10 +178,12 @@ export default function SystemSettingsModal({ folder, onClose, onMinimizeFolder 
           <div className="grid grid-cols-4 gap-3">
             {bgOptions.map((opt) => {
               const isActive = themeKey === opt.themeKey;
+              const palette = paletteOf(opt);
+              const [c1, c2, c3] = [palette[0] || "#000000", palette[1] || palette[0] || "#000000", palette[palette.length - 1] || "#000000"];
               return (
                 <button
                   key={opt.id}
-                  onClick={() => setTheme(opt.themeKey, { tipColor: opt.tipColor, baseColor: opt.baseColor, strokeColor: opt.strokeColor })}
+                  onClick={() => setTheme(opt.themeKey, palette)}
                   className="flex flex-col items-center gap-1.5 group transition-instant"
                 >
                   <div
@@ -189,11 +194,13 @@ export default function SystemSettingsModal({ folder, onClose, onMinimizeFolder 
                       boxShadow: isActive ? `0 0 8px ${MW.frame}` : "none",
                     }}
                   >
-                    <div className="absolute inset-0 opacity-80">
-                      {[...Array(6)].map((_, i) => (
-                        <div key={i} className="absolute rounded-full" style={{ width: "30%", height: "40%", left: `${(i % 3) * 33 + (Math.floor(i / 3) % 2 ? 16 : 0)}%`, top: `${Math.floor(i / 3) * 35}%`, background: `radial-gradient(ellipse at 50% 30%, ${opt.tipColor} 0%, transparent 70%)` }} />
-                      ))}
-                    </div>
+                    {/* Liquid-fluid palette preview: brightest stop swirling over the darker stops */}
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        background: `radial-gradient(ellipse at 70% 35%, ${c3} 0%, transparent 55%), radial-gradient(ellipse at 25% 75%, ${c2} 0%, transparent 60%), linear-gradient(135deg, ${c1} 0%, ${c2} 100%)`,
+                      }}
+                    />
                   </div>
                   <span className="text-xs font-serif" style={{ color: isActive ? MW.cream : MW.tanDim }}>{opt.label}</span>
                 </button>

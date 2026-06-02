@@ -4,8 +4,8 @@ import Header from "../components/Navigation/Header";
 import Dock from "../components/Dock/Dock";
 import Desktop from "../components/Desktop/Desktop";
 
-const AntigravityBackground = dynamic(
-  () => import("../components/AntigravityBackground"),
+const LiquidEtherBackground = dynamic(
+  () => import("../components/LiquidEtherBackground"),
   { ssr: false }
 );
 
@@ -43,7 +43,7 @@ export default function Home() {
 
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden">
-      <AntigravityBackground />
+      <LiquidEtherBackground />
       <Header onMenuItemClick={(slug) => setNavModalSlug(slug)} />
 
       <Desktop

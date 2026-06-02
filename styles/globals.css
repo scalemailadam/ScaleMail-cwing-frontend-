@@ -35,6 +35,16 @@ body {
   font-family: "MagicCards", serif;
 }
 
+/* LiquidEther fluid background container (see components/LiquidEther.jsx).
+   Lives here because Next.js Pages Router only allows global CSS from _app. */
+.liquid-ether-container {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
 /* All interactive elements get pointer cursor */
 button,
 [role="button"],
