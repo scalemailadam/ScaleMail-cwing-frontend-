@@ -11,7 +11,8 @@ import { useTheme } from "@/context/ThemeContext";
 // canvas) and tests the pointer against the container bounds. The backdrop is
 // ALWAYS solid black; only the fluid palette is theme-driven via `colors`
 // (see ThemeContext / the SystemSettings appearance switcher).
-const FALLBACK_COLORS = ["#5a8fb3", "#2b5876", "#102630"];
+// Dark → bright, matching every CMS Background Option (color1=darkest stop).
+const FALLBACK_COLORS = ["#102630", "#2b5876", "#5a8fb3"];
 
 export default function LiquidEtherBackground() {
   const { colors } = useTheme();

@@ -401,15 +401,50 @@ export default function LiquidEther({
     precision highp float;
     uniform sampler2D velocity;
     uniform sampler2D palette;
+    uniform sampler2D dye;
     uniform vec4 bgColor;
     varying vec2 uv;
     void main(){
     vec2 vel = texture2D(velocity, uv).xy;
     float lenv = clamp(length(vel), 0.0, 1.0);
-    vec3 c = texture2D(palette, vec2(lenv, 0.5)).rgb;
+    // Color comes from the advected dye field (a 0..1 phase that sweeps the
+    // whole palette), NOT from the velocity magnitude. Opacity still comes from
+    // velocity so the fluid only reveals where it moves. Decoupling the two is
+    // what lets all three palette stops show instead of just the brightest one.
+    float phase = clamp(texture2D(dye, uv).x, 0.0, 1.0);
+    vec3 c = texture2D(palette, vec2(phase, 0.5)).rgb;
     vec3 outRGB = mix(bgColor.rgb, c, lenv);
     float outA = mix(bgColor.a, 1.0, lenv);
     gl_FragColor = vec4(outRGB, outA);
+}
+`;
+    // Dye carrier: a single-channel phase field that is advected by the velocity
+    // field, injected at the cursor with a slowly time-cycling phase, and decayed
+    // each frame. The output shader reads this as the palette coordinate.
+    const dye_frag = `
+    precision highp float;
+    uniform vec2 boundarySpace;
+    uniform vec2 px;
+    uniform sampler2D velocity;
+    uniform sampler2D dye;
+    uniform vec2 fboSize;
+    uniform float dt;
+    uniform float decay;
+    uniform vec2 cursor;
+    uniform float cursorSize;
+    uniform float phase;
+    uniform float inject;
+    varying vec2 uv;
+    void main(){
+    vec2 ratio = max(fboSize.x, fboSize.y) / fboSize;
+    vec2 vel = texture2D(velocity, uv).xy;
+    vec2 src = uv - vel * dt * ratio;
+    float d = texture2D(dye, src).x * decay;
+    vec2 p = uv * 2.0 - 1.0;
+    float radius = max(cursorSize, 1e-3);
+    float splat = inject * (1.0 - smoothstep(0.0, radius, distance(p, cursor)));
+    d = mix(d, phase, clamp(splat, 0.0, 1.0));
+    gl_FragColor = vec4(clamp(d, 0.0, 1.0), 0.0, 0.0, 1.0);
 }
 `;
     const divergence_frag = `
@@ -739,6 +774,44 @@ export default function LiquidEther({
       }
     }
 
+    class Dye extends ShaderPass {
+      constructor(simProps) {
+        super({
+          material: {
+            vertexShader: face_vert,
+            fragmentShader: dye_frag,
+            uniforms: {
+              boundarySpace: { value: simProps.cellScale },
+              px: { value: simProps.cellScale },
+              fboSize: { value: simProps.fboSize },
+              velocity: { value: simProps.vel.texture },
+              dye: { value: simProps.src.texture },
+              dt: { value: simProps.dt },
+              decay: { value: simProps.decay },
+              cursor: { value: new THREE.Vector2() },
+              cursorSize: { value: 0.15 },
+              phase: { value: 0 },
+              inject: { value: 0 }
+            }
+          },
+          output: simProps.dst
+        });
+        this.uniforms = this.props.material.uniforms;
+        this.init();
+      }
+      update({ vel, src, output, dt, phase, inject, cursor, cursorSize }) {
+        this.uniforms.velocity.value = vel.texture;
+        this.uniforms.dye.value = src.texture;
+        this.uniforms.dt.value = dt;
+        this.uniforms.phase.value = phase;
+        this.uniforms.inject.value = inject;
+        this.uniforms.cursor.value.copy(cursor);
+        this.uniforms.cursorSize.value = cursorSize;
+        this.props.output = output;
+        super.update();
+      }
+    }
+
     class Simulation {
       constructor(options) {
         this.options = {
@@ -752,6 +825,8 @@ export default function LiquidEther({
           dt: 0.014,
           isViscous: false,
           BFECC: true,
+          dyeSpeed: 0.12, // palette cycles fully every ~1/dyeSpeed seconds
+          dyeDecay: 0.99, // per-frame dye fade
           ...options
         };
         this.fbos = {
@@ -761,7 +836,9 @@ export default function LiquidEther({
           vel_viscous1: null,
           div: null,
           pressure_0: null,
-          pressure_1: null
+          pressure_1: null,
+          dye_0: null,
+          dye_1: null
         };
         this.fboSize = new THREE.Vector2();
         this.cellScale = new THREE.Vector2();
@@ -836,6 +913,18 @@ export default function LiquidEther({
           dst: this.fbos.vel_0,
           dt: this.options.dt
         });
+        this.dye = new Dye({
+          cellScale: this.cellScale,
+          fboSize: this.fboSize,
+          vel: this.fbos.vel_0,
+          src: this.fbos.dye_0,
+          dst: this.fbos.dye_1,
+          dt: this.options.dt,
+          decay: this.options.dyeDecay
+        });
+        // Dye ping-pongs between two FBOs; dyeRead always holds the latest frame.
+        this.dyeRead = this.fbos.dye_0;
+        this.dyeWrite = this.fbos.dye_1;
       }
       calcSize() {
         const width = Math.max(1, Math.round(this.options.resolution * Common.width));
@@ -880,6 +969,23 @@ export default function LiquidEther({
           iterations: this.options.iterations_poisson
         });
         this.pressure.update({ vel, pressure });
+
+        // Carry/inject the color dye using the freshly projected velocity field.
+        const radius = Math.max(this.cellScale.x * this.options.cursor_size, 0.02);
+        const phase = (Common.time * this.options.dyeSpeed) % 1;
+        this.dye.update({
+          vel: this.fbos.vel_0,
+          src: this.dyeRead,
+          output: this.dyeWrite,
+          dt: this.options.dt,
+          phase,
+          inject: Mouse.mouseMoved ? 1 : 0,
+          cursor: Mouse.coords,
+          cursorSize: radius
+        });
+        const tmp = this.dyeRead;
+        this.dyeRead = this.dyeWrite;
+        this.dyeWrite = tmp;
       }
     }
 
@@ -902,6 +1008,7 @@ export default function LiquidEther({
               velocity: { value: this.simulation.fbos.vel_0.texture },
               boundarySpace: { value: new THREE.Vector2() },
               palette: { value: paletteTex },
+              dye: { value: this.simulation.dyeRead.texture },
               bgColor: { value: bgVec4 }
             }
           })
@@ -920,6 +1027,8 @@ export default function LiquidEther({
       }
       update() {
         this.simulation.update();
+        // Point the output at the dye buffer that was just written this frame.
+        this.output.material.uniforms.dye.value = this.simulation.dyeRead.texture;
         this.render();
       }
     }
